@@ -522,6 +522,7 @@ RAGForge will be developed step by step through professional milestones.
 
 ## ⚙️ Current Milestone: M2
 
+
 ### Goal
 
 Create the first running backend service using FastAPI.
