@@ -507,4 +507,6 @@ setup: configure initial development environment
 
 **Dameur Mounir**
 
-AI engineering learner and builder focused on production-oriented RAG systems, backend architecture, and future agentic AI applications.
+AI engineer and system builder focused on production-grade RAG, agentic AI systems, LangGraph workflows, vector databases, observability, and deployable AI architectures.
+
+My objective is to build practical, robust, and scalable AI systems that can evolve from learning projects into real products, client solutions, and future agentic platforms.
