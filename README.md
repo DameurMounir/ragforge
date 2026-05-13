@@ -6,6 +6,7 @@ The goal of this project is to progressively develop a complete RAG architecture
 
 ---
 
+
 ## Project Vision
 
 RAGForge is not just a minimal RAG demo.  
