@@ -542,10 +542,46 @@ Milestone 2 will be considered complete when the project contains:
 - ✅ running FastAPI application
 - ✅ `/docs` available
 - ✅ first test endpoint working
-- ⏳ structured API routes
-- ⏳ `/api/v1/health`
-- ⏳ environment configuration loaded from `.env`
 
+
+### Added in routes and environment configuration branch
+
+- ✅ Created a `routes/` folder
+- ✅ Added `routes/base.py`
+- ✅ Added `routes/__init__.py`
+- ✅ Added an API router with `/api/v1`
+- ✅ Loaded environment variables from `.env`
+- ✅ Added `python-dotenv` to `requirements.txt`
+- ✅ Returned `APP_NAME` and `APP_VERSION` from the API response
+
+### Current API endpoint
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/` | Returns application message, name, and version loaded from `.env` |
+
+### Test command
+
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 5000
+
+```bash
+Expected result
+{
+  "message": "Hello and goodbye!",
+  "app_name": "RAGForge",
+  "app_version": "0.1.0"
+}
+
+
+---
+
+## 8. Commit and push
+
+Après test réussi, stoppe le serveur :
+
+```bash
+CTRL + C
 ---
 
 ## 🧠 Project Philosophy
