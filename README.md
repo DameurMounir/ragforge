@@ -509,4 +509,6 @@ setup: configure initial development environment
 
 AI engineer, teacher, and system builder focused on production-grade RAG, agentic AI systems, LangGraph architectures, vector databases, observability, and real-world AI deployment.
 
-This project is part of my long-term roadmap to master, design, and build robust AI systems capable of powering future autonomous agents, educational platforms, and enterprise-ready AI products.
+AI engineer and system builder focused on production-grade RAG, agentic AI systems, LangGraph workflows, vector databases, observability, and deployable AI architectures.
+
+My objective is to build practical, robust, and scalable AI systems that can evolve from learning projects into real products, client solutions, and future agentic platforms.
