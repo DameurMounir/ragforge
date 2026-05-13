@@ -35,12 +35,26 @@ The objective is to master the full RAG engineering path before moving later to 
 The project is currently in:
 
 ```text
-Milestone 1: Project Bootstrap & Environment
-Issue #1: Define RAGForge Core vision and learning strategy
-Branch: setup/initial-ragforge-environment
+Milestone 2: FastAPI Backend Foundation
+Issue #5: Create minimal FastAPI application
+Branch: feature/2-fastapi-foundation
 ```
 
-This first milestone focuses on preparing the repository, defining the project vision, setting up the development environment, and creating the first professional project structure.
+This milestone introduces the first running backend service for RAGForge Core using FastAPI.
+
+The current branch adds a minimal FastAPI application, verifies that Uvicorn starts correctly, and exposes a first test endpoint:
+
+```text
+GET /hello
+```
+
+Expected response:
+
+```json
+{
+  "message": "hello!"
+}
+```
 
 ---
 
@@ -250,18 +264,20 @@ The private local file is:
 
 ---
 
-## 🗂️ Initial Project Structure
+## 🗂️ Current Project Structure
 
 The current repository structure is:
 
 ```text
 ragforge/
 ├── resources/
-│   └── .gitkeep
+│   ├── .gitkeep
+│   └── ragforge.postman_collection.json
 ├── .env.example
 ├── .gitignore
 ├── LICENSE
 ├── README.md
+├── main.py
 └── requirements.txt
 ```
 
@@ -273,18 +289,15 @@ The `resources/` folder is reserved for small project support files such as:
 - 📊 diagrams
 - 📄 small sample files
 - 🧾 documentation resources
+- 🧪 Postman collections
 
-The `.gitkeep` file is used because Git does not track empty folders.
+The current Postman collection can be used to test the first API endpoints.
 
 ---
 
-## ▶️ How to Use the Project Now
+## ▶️ How to Run the FastAPI Application
 
-At the current stage, the project is still in the environment setup phase.
-
-There is no FastAPI application to run yet.
-
-For now, the correct usage is:
+The project now contains a minimal FastAPI backend.
 
 ### 1. Activate the environment
 
@@ -310,13 +323,77 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-### 5. Check Git status
+### 5. Run the API
 
 ```bash
-git status
+uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
 
-The project is now ready for the next milestone: building the first FastAPI backend.
+### 6. Test the endpoint
+
+Open:
+
+```text
+http://127.0.0.1:5000/hello
+```
+
+Expected response:
+
+```json
+{
+  "message": "hello!"
+}
+```
+
+You can also open the automatic FastAPI documentation:
+
+```text
+http://127.0.0.1:5000/docs
+```
+
+---
+
+## ⚙️ Milestone 2 - FastAPI Backend Foundation
+
+Milestone 2 introduces the first backend layer of RAGForge Core.
+
+### Implemented in this branch
+
+- ✅ Created a minimal FastAPI application
+- ✅ Added a `/hello` endpoint
+- ✅ Verified that the application runs with Uvicorn
+- ✅ Verified that FastAPI documentation is available through `/docs`
+- ✅ Added a Postman collection inside the `resources/` folder
+
+### Current endpoint
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/hello` | Returns a simple JSON test response |
+
+### Current test command
+
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 5000
+```
+
+### Expected result
+
+```json
+{
+  "message": "hello!"
+}
+```
+
+### Next step
+
+The next branch will improve the backend structure by adding:
+
+- structured routes
+- API versioning
+- `/api/v1/health`
+- environment configuration
+- application settings loaded from `.env`
 
 ---
 
@@ -351,20 +428,20 @@ git pull origin main
 
 ### 3. Create a branch for the issue
 
+For the current FastAPI foundation branch:
+
 ```bash
-git checkout -b setup/initial-ragforge-environment
+git checkout -b feature/2-fastapi-foundation
 ```
 
 ### 4. Make changes
 
-Edit files such as:
+For this branch, the main files are:
 
 ```text
+main.py
 README.md
-requirements.txt
-.env.example
-.gitignore
-resources/.gitkeep
+resources/ragforge.postman_collection.json
 ```
 
 ### 5. Check status
@@ -382,13 +459,13 @@ git add .
 ### 7. Commit changes
 
 ```bash
-git commit -m "chore: add initial RAGForge environment setup"
+git commit -m "feat: add FastAPI foundation"
 ```
 
 ### 8. Push the branch
 
 ```bash
-git push -u origin setup/initial-ragforge-environment
+git push -u origin feature/2-fastapi-foundation
 ```
 
 ### 9. Open a Pull Request
@@ -396,28 +473,34 @@ git push -u origin setup/initial-ragforge-environment
 Open a Pull Request on GitHub and link it to the issue:
 
 ```text
-Closes #1
+Closes #5
+```
+
+Recommended PR title:
+
+```text
+Add FastAPI foundation
 ```
 
 ---
 
 ## 🧩 Current Work Completed
 
-The current branch includes the first project setup work:
+The project already includes:
 
-- ✅ Created the initial `README.md`
-- ✅ Defined the RAGForge project vision
-- ✅ Added requirements and installation instructions
-- ✅ Created the Conda environment with Python 3.11
-- ✅ Added `requirements.txt`
-- ✅ Installed FastAPI, Uvicorn, and python-multipart
-- ✅ Created `.env.example`
-- ✅ Prepared local `.env` usage
+- ✅ Initial `README.md`
+- ✅ RAGForge project vision
+- ✅ Conda environment with Python 3.11
+- ✅ `requirements.txt`
+- ✅ FastAPI, Uvicorn, and python-multipart
+- ✅ `.env.example`
 - ✅ Protected `.env` using `.gitignore`
-- ✅ Created the `resources/` folder
-- ✅ Added `.gitkeep` to keep the empty folder in Git
-- ✅ Customized the WSL terminal prompt for better readability
-- ✅ Prepared the repository for milestone-based development
+- ✅ `resources/` folder
+- ✅ Postman collection for API testing
+- ✅ Minimal FastAPI application
+- ✅ `/hello` endpoint
+- ✅ Successful Uvicorn execution
+- ✅ First working backend test
 
 ---
 
@@ -437,36 +520,68 @@ RAGForge will be developed step by step through professional milestones.
 
 ---
 
-## 🧱 Current Milestone: M1
+## ⚙️ Current Milestone: M2
+
 
 ### Goal
 
-Prepare the repository and development environment before writing the main backend code.
+Create the first running backend service using FastAPI.
 
 ### Current focus
 
-- project vision
-- requirements
-- environment setup
-- GitHub workflow
-- first branch
-- first issue
-- first pull request
+- minimal FastAPI application
+- Uvicorn execution
+- first test endpoint
+- API documentation
+- Postman collection
 
 ### Definition of Done
 
-Milestone 1 will be considered complete when the project contains:
+Milestone 2 will be considered complete when the project contains:
 
-- ✅ professional `README.md`
-- ✅ `requirements.txt`
-- ✅ `.env.example`
-- ✅ `.gitignore`
-- ✅ `resources/.gitkeep`
-- ✅ Conda environment
-- ✅ GitHub issue
-- ✅ GitHub branch
-- ✅ Pull Request merged into `main`
+- ✅ running FastAPI application
+- ✅ `/docs` available
+- ✅ first test endpoint working
 
+
+### Added in routes and environment configuration branch
+
+- ✅ Created a `routes/` folder
+- ✅ Added `routes/base.py`
+- ✅ Added `routes/__init__.py`
+- ✅ Added an API router with `/api/v1`
+- ✅ Loaded environment variables from `.env`
+- ✅ Added `python-dotenv` to `requirements.txt`
+- ✅ Returned `APP_NAME` and `APP_VERSION` from the API response
+
+### Current API endpoint
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/` | Returns application message, name, and version loaded from `.env` |
+
+### Test command
+
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 5000
+
+```bash
+Expected result
+{
+  "message": "Hello and goodbye!",
+  "app_name": "RAGForge",
+  "app_version": "0.1.0"
+}
+
+
+---
+
+## 8. Commit and push
+
+Après test réussi, stoppe le serveur :
+
+```bash
+CTRL + C
 ---
 
 ## 🧠 Project Philosophy
@@ -499,6 +614,8 @@ chore: add initial backend requirements
 chore: add environment example file
 chore: add resources folder
 setup: configure initial development environment
+feat: add FastAPI foundation
+docs: update README with FastAPI run instructions
 ```
 
 ---
