@@ -238,3 +238,7 @@ storage/uploads/*
 # Temporary local files
 tmp/
 temp/
+
+# Local uploaded files
+storage/uploads/*
+!storage/uploads/.gitkeep
