@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # FILE_ALLOWED_MIME_TYPES=["application/pdf", "text/plain"]
     FILE_ALLOWED_MIME_TYPES: list[str]
 
+    # Storage settings // added at milestone 3 branche 6
+    UPLOAD_DIR: str = 'storage/uploads'
+    PROJECT_DOCUMENTS_DIR: str = 'documents'
     # Pydantic v2 configuration.
     # This tells Pydantic to read values from the .env file.
     model_config = SettingsConfigDict(
