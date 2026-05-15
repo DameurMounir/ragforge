@@ -1,6 +1,6 @@
 # 🛠️ RAGForge
 
-**RAGForge** is a production-oriented **Retrieval-Augmented Generation** platform designed to build, test, and evolve modular RAG systems step by step.
+**RAGForge** is a production-oriented **Retrieval-Augmented Generation (RAG)** platform designed to build, test, and evolve modular RAG systems step by step.
 
 This project is not a simple notebook or a small demo. It is a long-term AI engineering project focused on building a clean, scalable, and professional RAG backend architecture using real engineering practices: **milestones, issues, branches, pull requests, documentation, testing, and deployment**.
 
@@ -8,7 +8,7 @@ This project is not a simple notebook or a small demo. It is a long-term AI engi
 
 ## 🎯 Project Vision
 
-RAGForge aims to become a complete RAG backend foundation that can be progressively extended from a simple document-processing system into a production-ready Retrieval-Augmented Generation platform.
+RAGForge aims to become a complete RAG backend foundation that can progressively evolve from a basic document-processing system into a production-ready Retrieval-Augmented Generation and agentic AI platform.
 
 The project will evolve through structured milestones covering:
 
@@ -25,6 +25,7 @@ The project will evolve through structured milestones covering:
 - 📊 evaluation and observability
 - 🐳 Docker deployment
 - ⏱️ background workers
+- 🧠 future agentic extensions
 
 The objective is to master the full RAG engineering path before moving later to more advanced agentic systems.
 
@@ -40,30 +41,22 @@ Issue #6: Add nested routes and environment configuration
 Branch: feature/3-routes-env-config
 ```
 
-This milestone introduces the first running backend service for RAGForge Core using FastAPI.
-
-The current branch improves the initial FastAPI foundation by adding:
+This branch improves the initial FastAPI foundation by introducing:
 
 - a dedicated `routes/` package
-- an API router with the `/api/v1` prefix
-- environment variable loading from `.env`
-- application metadata returned from the API response
+- a versioned API router using the `/api/v1` prefix
+- environment-based configuration using `.env`
+- application metadata returned from API responses
+- a dedicated health check endpoint
 - `python-dotenv` support
+- a cleaner structure ready for future backend modules
 
-The current active endpoint is:
+Current active endpoints:
 
 ```text
 GET /api/v1/
-```
-
-Expected response:
-
-```json
-{
-  "message": "Hello and goodbye!",
-  "app_name": "RAGForge",
-  "app_version": "0.1.0"
-}
+GET /api/v1/health/
+GET /docs
 ```
 
 ---
@@ -94,23 +87,15 @@ sudo apt install libpq-dev gcc python3-dev
 
 ### Why these dependencies?
 
-- `libpq-dev` is needed later for PostgreSQL-related Python packages.
+- `libpq-dev` will be useful later for PostgreSQL-related Python packages.
 - `gcc` is needed to compile some Python dependencies.
-- `python3-dev` provides Python development headers needed by some packages.
+- `python3-dev` provides Python development headers required by some packages.
 
 ---
 
-## 📦 Install Python using Miniconda
+## 📦 Install Python Using Miniconda
 
-### 1. Download and install Miniconda
-
-Download and install Miniconda from the official website.
-
-After installation, restart your terminal or open a new WSL Ubuntu terminal.
-
----
-
-### 2. Create a new Conda environment
+### 1. Create a new Conda environment
 
 Create a dedicated environment for this project:
 
@@ -118,23 +103,19 @@ Create a dedicated environment for this project:
 conda create -n ragforge python=3.11
 ```
 
----
-
-### 3. Activate the environment
+### 2. Activate the environment
 
 ```bash
 conda activate ragforge
 ```
 
-After activation, you should see something like this in your terminal:
+After activation, you should see something like this:
 
 ```text
 (ragforge) dameurmounir@DESKTOP-XXXX:~/development/tech/ai-engineering/projects/rag/ragforge$
 ```
 
----
-
-### 4. Verify Python version
+### 3. Verify Python version
 
 ```bash
 python --version
@@ -157,13 +138,6 @@ export PS1="\[\033[01;32m\]\u@\h:\w\n\[\033[00m\]\$ "
 ```
 
 This displays the username, hostname, and current directory on one line, then places the command input on a new line.
-
-Example:
-
-```text
-dameurmounir@DESKTOP-XXXX:~/development/tech/ai-engineering/projects/rag/ragforge
-$
-```
 
 To make this change permanent:
 
@@ -188,7 +162,7 @@ Enter the project folder:
 cd ragforge
 ```
 
-If the repository is already cloned, only enter the folder:
+If the repository is already cloned, enter the existing folder:
 
 ```bash
 cd ~/development/tech/ai-engineering/projects/rag/ragforge
@@ -243,12 +217,13 @@ code .env
 ```env
 APP_NAME="RAGForge"
 APP_VERSION="0.1.0"
+APP_ENV="development"
 OPENAI_API_KEY=""
 ```
 
-For now, you can leave `OPENAI_API_KEY` empty.
+For now, `OPENAI_API_KEY` can stay empty.
 
-Later, when LLM integration is added, you can add your real API key inside `.env`.
+Later, when LLM integration is added, the real API key can be stored locally inside `.env`.
 
 ---
 
@@ -287,7 +262,8 @@ ragforge/
 │   └── ragforge.postman_collection.json
 ├── routes/
 │   ├── __init__.py
-│   └── base.py
+│   ├── base.py
+│   └── health.py
 ├── .env.example
 ├── .gitignore
 ├── LICENSE
@@ -314,11 +290,19 @@ The `routes/` folder separates API route definitions from the main FastAPI appli
 
 This prepares the backend for a cleaner and more scalable architecture. Instead of putting every endpoint directly inside `main.py`, each group of routes can later be organized into its own module.
 
+Current route modules:
+
+| File | Responsibility |
+|---|---|
+| `routes/base.py` | Defines the base `/api/v1/` endpoint |
+| `routes/health.py` | Defines the `/api/v1/health/` health check endpoint |
+| `routes/__init__.py` | Marks `routes/` as a Python package |
+
 ---
 
 ## ▶️ How to Run the FastAPI Application
 
-The project now contains a minimal FastAPI backend with structured routing.
+The project now contains a minimal FastAPI backend with structured routing and environment configuration.
 
 ### 1. Activate the environment
 
@@ -347,15 +331,42 @@ cp .env.example .env
 ### 5. Run the API
 
 ```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 5000
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-### 6. Test the main API route
+You can also use `0.0.0.0` if you want the server to listen on all interfaces:
+
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+---
+
+## 🌐 Current API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/` | Returns a base message with application metadata loaded from `.env` |
+| GET | `/api/v1/health/` | Returns the API health status with application metadata and UTC timestamp |
+| GET | `/docs` | Opens the automatic Swagger UI generated by FastAPI |
+| GET | `/redoc` | Opens the automatic ReDoc documentation generated by FastAPI |
+
+---
+
+## 🧪 Testing the Current Branch
+
+### 1. Run the server
+
+```bash
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+### 2. Test the base API route
 
 Open:
 
 ```text
-http://127.0.0.1:5000/api/v1/
+http://127.0.0.1:8000/api/v1/
 ```
 
 Expected response:
@@ -364,32 +375,68 @@ Expected response:
 {
   "message": "Hello and goodbye!",
   "app_name": "RAGForge",
-  "app_version": "0.1.0"
+  "app_version": "0.1.0",
+  "environment": "development",
+  "timestamp": "2026-05-15T10:00:00+00:00"
 }
 ```
 
-### 7. Open the automatic API documentation
+### 3. Test the health check route
 
 Open:
 
 ```text
-http://127.0.0.1:5000/docs
+http://127.0.0.1:8000/api/v1/health/
+```
+
+Expected response:
+
+```json
+{
+  "status": "healthy",
+  "app_name": "RAGForge",
+  "app_version": "0.1.0",
+  "environment": "development",
+  "timestamp": "2026-05-15T10:00:00+00:00"
+}
+```
+
+### 4. Test using `curl`
+
+```bash
+curl http://127.0.0.1:8000/api/v1/
+curl http://127.0.0.1:8000/api/v1/health/
+```
+
+### 5. Open the automatic API documentation
+
+Open:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+Expected result:
+
+```text
+FastAPI Swagger documentation opens successfully.
 ```
 
 ---
 
-## ⚙️ Milestone 2 - FastAPI Backend Foundation
+## ⚙️ Milestone 2 — FastAPI Backend Foundation
 
 Milestone 2 introduces the first backend layer of RAGForge Core.
 
-The milestone is divided into two main parts:
+The milestone is divided into three parts:
 
 1. Minimal FastAPI foundation
 2. Routes and environment configuration
+3. Health check endpoint
 
 ---
 
-### Part 1 - FastAPI Foundation
+### Part 1 — FastAPI Foundation
 
 Implemented in the previous branch:
 
@@ -407,7 +454,7 @@ Completed work:
 
 ---
 
-### Part 2 - Routes and Environment Configuration
+### Part 2 — Routes and Environment Configuration
 
 Implemented in the current branch:
 
@@ -418,64 +465,34 @@ feature/3-routes-env-config
 Completed work:
 
 - ✅ Created a `routes/` folder
-- ✅ Added `routes/base.py`
 - ✅ Added `routes/__init__.py`
+- ✅ Added `routes/base.py`
 - ✅ Added an API router with the `/api/v1` prefix
 - ✅ Loaded environment variables from `.env`
 - ✅ Added `python-dotenv` to `requirements.txt`
-- ✅ Returned `APP_NAME` and `APP_VERSION` from the API response
-- ✅ Updated `main.py` to include the router
+- ✅ Returned `APP_NAME`, `APP_VERSION`, and `APP_ENV` from the API response
+- ✅ Added a UTC timestamp to the base API response
+- ✅ Updated `main.py` to include the base router
 
 ---
 
-## 🌐 Current API Endpoints
+### Part 3 — Health Check Endpoint
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/v1/` | Returns a message, application name, and application version loaded from `.env` |
-| GET | `/docs` | Opens the automatic Swagger UI generated by FastAPI |
-
----
-
-## 🧪 Testing the Current Branch
-
-### Run the server
-
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 5000
-```
-
-### Test the API route
-
-Open:
+Implemented in the current branch:
 
 ```text
-http://127.0.0.1:5000/api/v1/
+feature/3-routes-env-config
 ```
 
-Expected result:
+Completed work:
 
-```json
-{
-  "message": "Hello and goodbye!",
-  "app_name": "RAGForge",
-  "app_version": "0.1.0"
-}
-```
-
-### Test the documentation
-
-Open:
-
-```text
-http://127.0.0.1:5000/docs
-```
-
-Expected result:
-
-```text
-FastAPI Swagger documentation opens successfully.
-```
+- ✅ Added `routes/health.py`
+- ✅ Added a dedicated health router with the `/api/v1/health` prefix
+- ✅ Added a health check endpoint at `/api/v1/health/`
+- ✅ Returned `status`, `APP_NAME`, `APP_VERSION`, `APP_ENV`, and UTC timestamp
+- ✅ Updated `main.py` to include the health router
+- ✅ Verified that the endpoint works with Uvicorn
+- ✅ Verified that the route appears in FastAPI Swagger documentation
 
 ---
 
@@ -487,8 +504,11 @@ Current architecture:
 
 ```text
 main.py
-  └── includes routes/base.py
-        └── exposes /api/v1/
+  ├── includes routes/base.py
+  │     └── exposes /api/v1/
+  │
+  └── includes routes/health.py
+        └── exposes /api/v1/health/
 ```
 
 Current responsibility of each file:
@@ -496,7 +516,8 @@ Current responsibility of each file:
 | File | Responsibility |
 |---|---|
 | `main.py` | Creates the FastAPI application, loads `.env`, and includes routers |
-| `routes/base.py` | Defines the `/api/v1` router and base endpoint |
+| `routes/base.py` | Defines the `/api/v1/` router and base endpoint |
+| `routes/health.py` | Defines the `/api/v1/health/` router and health check endpoint |
 | `routes/__init__.py` | Marks `routes/` as a Python package |
 | `.env.example` | Shows required environment variables |
 | `requirements.txt` | Lists Python dependencies |
@@ -508,8 +529,44 @@ This structure will make it easier to add future route groups such as:
 - processing routes
 - search routes
 - RAG answer routes
-- health check routes
+- database health routes
 - admin or monitoring routes
+
+---
+
+## 🩺 Why a Health Check Endpoint Matters
+
+The health check endpoint is a small but important production feature.
+
+It is commonly used by:
+
+- Docker health checks
+- Kubernetes readiness and liveness probes
+- monitoring systems
+- load balancers
+- CI/CD pipelines
+- uptime checkers
+- deployment scripts
+
+In the future, the health route can be extended into several checks:
+
+```text
+GET /api/v1/health/
+GET /api/v1/health/db
+GET /api/v1/health/qdrant
+GET /api/v1/health/redis
+GET /api/v1/health/workers
+```
+
+Future checks may verify:
+
+- PostgreSQL connection
+- Qdrant vector database status
+- Redis availability
+- Celery or ARQ worker status
+- file storage availability
+- model provider availability
+- system uptime and readiness
 
 ---
 
@@ -559,6 +616,7 @@ main.py
 README.md
 requirements.txt
 routes/base.py
+routes/health.py
 routes/__init__.py
 .env.example
 ```
@@ -577,8 +635,10 @@ git add .
 
 ### 7. Commit changes
 
+Recommended commit message:
+
 ```bash
-git commit -m "feat: add routes and environment config"
+git commit -m "feat: add routes, env config and health check"
 ```
 
 ### 8. Push the branch
@@ -598,7 +658,7 @@ Closes #6
 Recommended PR title:
 
 ```text
-Add routes and environment config
+Add routes, environment config and health check
 ```
 
 ---
@@ -619,8 +679,10 @@ The project already includes:
 - ✅ Minimal FastAPI application
 - ✅ Structured `routes/` package
 - ✅ `/api/v1/` endpoint
+- ✅ `/api/v1/health/` endpoint
 - ✅ Environment variable loading from `.env`
-- ✅ Application name and version returned by the API
+- ✅ Application name, version, and environment returned by the API
+- ✅ UTC timestamp returned by API responses
 - ✅ Successful Uvicorn execution
 - ✅ FastAPI Swagger documentation through `/docs`
 
@@ -633,12 +695,12 @@ RAGForge will be developed step by step through professional milestones.
 | Milestone | Focus | Expected Result |
 |---|---|---|
 | M1 | 🧱 Project Bootstrap & Environment | README, environment, Git workflow, initial structure |
-| M2 | ⚙️ FastAPI Backend Foundation | Running FastAPI app with basic routes and environment config |
+| M2 | ⚙️ FastAPI Backend Foundation | Running FastAPI app with structured routes, env config, and health check |
 | M3 | 📄 File Upload & Processing | Upload and process documents |
 | M4 | 🗄️ Database & Document Models | Store metadata, documents, and chunks |
 | M5 | 🔁 Data Pipeline Checkpoint | Stable ingestion pipeline |
 | M6 | 🔎 RAG Core | Embeddings, vector search, retrieval, answer generation |
-| M7 | 🐳 Deployment & Workers | Docker, PostgreSQL, PgVector, Celery, Flower |
+| M7 | 🐳 Deployment & Workers | Docker, PostgreSQL, Qdrant/PgVector, Redis, Celery/ARQ, monitoring |
 
 ---
 
@@ -646,7 +708,7 @@ RAGForge will be developed step by step through professional milestones.
 
 ### Goal
 
-Create the first running backend service using FastAPI, structured routes, API versioning, and environment-based configuration.
+Create the first running backend service using FastAPI, structured routes, API versioning, environment-based configuration, and a production-style health check endpoint.
 
 ### Current focus
 
@@ -656,6 +718,7 @@ Create the first running backend service using FastAPI, structured routes, API v
 - API version prefix
 - `.env` loading
 - application metadata
+- health check endpoint
 - API documentation
 - Postman testing resources
 
@@ -669,30 +732,33 @@ Milestone 2 will be considered complete when the project contains:
 - ✅ structured API routes
 - ✅ `/api/v1/` route working
 - ✅ environment variables loaded from `.env`
-- ✅ `APP_NAME` and `APP_VERSION` returned from API response
-- ⏳ dedicated `/api/v1/health` endpoint
+- ✅ `APP_NAME`, `APP_VERSION`, and `APP_ENV` returned from API responses
+- ✅ dedicated `/api/v1/health/` endpoint
+- ✅ health check returns `healthy` status
+- ✅ Swagger documentation shows all current endpoints
 
 ---
 
 ## ⏭️ Next Step
 
-The next improvement should be a dedicated health endpoint:
+The next improvement should be to add the first **document upload route**.
+
+Planned future route:
 
 ```text
-GET /api/v1/health
+POST /api/v1/documents/upload
 ```
 
-Expected future response:
+Expected future responsibility:
 
-```json
-{
-  "status": "ok",
-  "app_name": "RAGForge",
-  "app_version": "0.1.0"
-}
-```
+- receive uploaded PDF or text files
+- validate file type
+- store files temporarily or permanently
+- create document metadata
+- prepare the file for text extraction and chunking
+- later connect the upload process to background jobs
 
-This will make the backend cleaner and more production-oriented because health endpoints are commonly used by deployment systems, monitoring tools, Docker health checks, and future CI/CD pipelines.
+This will move RAGForge from a basic backend foundation toward the real RAG ingestion pipeline.
 
 ---
 
@@ -729,7 +795,8 @@ setup: configure initial development environment
 feat: add FastAPI foundation
 docs: update README with FastAPI run instructions
 feat: add routes and environment config
-docs: update README for routes and env config
+feat: add health check route
+docs: update README for routes, env config and health check
 ```
 
 ---
