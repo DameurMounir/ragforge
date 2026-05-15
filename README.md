@@ -2,7 +2,7 @@
 
 **RAGForge** is a production-oriented **Retrieval-Augmented Generation (RAG)** backend platform built step by step with real software engineering practices.
 
-The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, file validation, storage services, text extraction, chunking, embeddings, vector search, RAG answer generation, observability, background workers, deployment, and later agentic workflows.
+The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, file validation, project-based storage, text extraction, chunking, embeddings, vector search, RAG answer generation, observability, background workers, deployment, and later agentic workflows.
 
 RAGForge is not a notebook demo. It is designed as a long-term AI engineering project focused on building a clean, scalable, and professional backend architecture.
 
@@ -17,6 +17,7 @@ The project will evolve through structured milestones covering:
 - ⚙️ FastAPI backend foundation
 - 📄 document upload and processing
 - 📡 standardized API responses
+- 🗂️ project-based file storage
 - 🗄️ metadata storage
 - ✂️ text extraction and chunking
 - 🧬 embedding generation
@@ -35,22 +36,22 @@ The objective is to master the full engineering path from a basic backend servic
 
 ```text
 Milestone 3: File Upload & Document Processing
-Current branch: feature/5-response-signals-and-api-standards
-Focus: Add response signals, API standards, settings injection, and file validation configuration
+Current branch: feature/6-project-based-file-storage
+Focus: Add project-based file storage service and safe upload directory foundation
 ```
 
-This branch completes the second part of Milestone 3 by introducing a centralized response signal system and cleaner API response conventions before implementing the real document upload endpoint.
+This branch completes the third part of Milestone 3 by introducing the local storage foundation required before implementing the real document upload endpoint.
 
 Current focus:
 
-- create centralized response signals using Python Enum
-- organize enum-related code inside `models/enums/`
-- standardize the health endpoint response with a controlled signal
-- use FastAPI dependency injection with `Depends(get_settings)`
-- extend application settings for future file validation
-- prepare upload-related environment variables
-- keep routes thin and predictable
-- prepare the backend for future upload validation, storage, and document processing logic
+- create a reusable base service for shared service utilities
+- create a project service responsible for project-based storage folders
+- prepare the `storage/uploads/` runtime directory
+- keep uploaded files out of Git while preserving the folder structure
+- centralize storage settings in `core/config.py`
+- expose storage configuration through `.env.example`
+- prepare the backend for future document upload, validation, and async file writing
+- keep routes thin by moving storage logic into services
 
 ---
 
@@ -59,7 +60,7 @@ Current focus:
 RAGForge follows a **production-oriented FastAPI `src` architecture**.
 
 ```text
-Route → Settings / Response Standards → Service → Storage / Database / Vector DB / LLM
+Route → Service → Storage / Database / Vector DB / LLM
 ```
 
 The application code lives inside:
@@ -110,6 +111,9 @@ ragforge/
         │   ├── base.py
         │   └── health.py
         ├── services/
+        │   ├── __init__.py
+        │   ├── base_service.py
+        │   └── project_service.py
         ├── models/
         │   ├── __init__.py
         │   └── enums/
@@ -164,6 +168,69 @@ ragforge/
 - ✅ `.env.example` updated with required application and file settings
 - ✅ API response structure prepared for future upload validation and storage logic
 
+### Milestone 3 — Branch 3: Project-Based File Storage
+
+- ✅ `BaseService` added as a shared foundation for service classes
+- ✅ `ProjectService` added to manage project-based storage folders
+- ✅ Storage settings added to `core/config.py`
+- ✅ `.env.example` updated with storage-related variables
+- ✅ `storage/uploads/.gitkeep` added to preserve runtime upload structure
+- ✅ `.gitignore` updated to ignore real uploaded files
+- ✅ Project storage prepared using the structure:
+
+```text
+storage/
+└── uploads/
+    └── {project_id}/
+        └── documents/
+```
+
+This branch does not implement the real document upload endpoint yet. It only prepares the storage layer that the next branch will use.
+
+---
+
+## 🗂️ Project-Based Storage
+
+RAGForge now prepares project-based storage for future uploaded documents.
+
+Target structure:
+
+```text
+storage/
+└── uploads/
+    └── project_001/
+        └── documents/
+            └── uploaded files
+```
+
+The storage layer is handled by:
+
+```text
+src/ragforge/services/base_service.py
+src/ragforge/services/project_service.py
+```
+
+### Service responsibilities
+
+`BaseService`:
+
+- loads centralized settings
+- exposes shared storage paths
+- provides common directory utilities
+
+`ProjectService`:
+
+- validates project identifiers
+- resolves project upload paths
+- creates project document folders
+- keeps path logic outside API routes
+
+This keeps the architecture clean:
+
+```text
+Route → Service → Storage
+```
+
 ---
 
 ## 🌐 Current API Endpoints
@@ -180,7 +247,7 @@ ragforge/
 
 ## 📡 Response Signals
 
-RAGForge now uses centralized response signals to make API responses predictable and easier to consume by frontend clients, workers, services, and future agentic layers.
+RAGForge uses centralized response signals to make API responses predictable and easier to consume by frontend clients, workers, services, and future agentic layers.
 
 Response signals are stored in:
 
@@ -223,7 +290,7 @@ Example health response:
 
 ---
 
-## ⚙️ Settings and File Configuration
+## ⚙️ Settings and Configuration
 
 Application configuration is centralized in:
 
@@ -239,6 +306,8 @@ The settings layer currently supports:
 - maximum accepted file size
 - allowed file extensions
 - allowed MIME types
+- upload storage directory
+- project document folder name
 
 Example `.env.example`:
 
@@ -250,6 +319,9 @@ APP_ENV="development"
 FILE_MAX_SIZE_MB=10
 FILE_ALLOWED_EXTENSIONS=["pdf", "txt", "docx"]
 FILE_ALLOWED_MIME_TYPES=["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+
+UPLOAD_DIR="storage/uploads"
+PROJECT_DOCUMENTS_DIR="documents"
 
 OPENAI_API_KEY=""
 ```
@@ -352,8 +424,8 @@ The main README is intentionally short. Long explanations belong in `docs/`.
 | M2 | ⚙️ FastAPI Backend Foundation | ✅ Completed |
 | M3.1 | 🧱 Service Architecture and Settings | ✅ Completed |
 | M3.2 | 📡 Response Signals and API Standards | ✅ Completed |
-| M3.3 | 🗂️ Project Storage Service | ⏳ Next |
-| M3.4 | 📄 Document Upload Endpoint | ⏳ Planned |
+| M3.3 | 🗂️ Project-Based File Storage | ✅ Completed |
+| M3.4 | 📄 Document Upload Endpoint | ⏳ Next |
 | M4 | ✂️ Text Extraction & Chunking | ⏳ Planned |
 | M5 | 🗄️ PostgreSQL Metadata Layer | ⏳ Planned |
 | M6 | 🧬 Embeddings & Qdrant Vector Search | ⏳ Planned |
@@ -377,19 +449,19 @@ Milestone → Issue → Branch → Pull Request → Merge
 Current branch:
 
 ```text
-feature/5-response-signals-and-api-standards
+feature/6-project-based-file-storage
 ```
 
 Recommended commit for this branch:
 
 ```bash
-git commit -m "feat: add response signals and API standards"
+git commit -m "feat: add project-based file storage service"
 ```
 
 Next branch:
 
 ```text
-feature/6-project-storage-service
+feature/7-document-upload-endpoint
 ```
 
 ---
@@ -405,7 +477,9 @@ RAGForge follows these principles:
 - organize enum values under `models/enums/`
 - use controlled response signals instead of duplicated raw strings
 - prepare validation rules before implementing upload logic
+- isolate project-based storage logic inside services
 - keep runtime data outside source code
+- keep uploaded files out of Git
 - keep project-level files at the repository root
 - use environment-based configuration
 - do not commit private `.env` files
