@@ -218,3 +218,23 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ------------------------------------------------------------
+# RAGForge project-specific ignores
+# ------------------------------------------------------------
+
+# Private environment files
+.env
+.env.*
+!.env.example
+
+# Uploaded documents and runtime storage
+storage/uploads/*
+!storage/uploads/.gitkeep
+
+# Local runtime logs
+*.log
+
+# Temporary local files
+tmp/
+temp/
