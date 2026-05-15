@@ -2,7 +2,7 @@
 
 **RAGForge** is a production-oriented **Retrieval-Augmented Generation (RAG)** backend platform built step by step with real software engineering practices.
 
-The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, text extraction, chunking, embeddings, vector search, RAG answer generation, observability, background workers, deployment, and later agentic workflows.
+The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, file validation, storage services, text extraction, chunking, embeddings, vector search, RAG answer generation, observability, background workers, deployment, and later agentic workflows.
 
 RAGForge is not a notebook demo. It is designed as a long-term AI engineering project focused on building a clean, scalable, and professional backend architecture.
 
@@ -16,6 +16,7 @@ The project will evolve through structured milestones covering:
 
 - ⚙️ FastAPI backend foundation
 - 📄 document upload and processing
+- 📡 standardized API responses
 - 🗄️ metadata storage
 - ✂️ text extraction and chunking
 - 🧬 embedding generation
@@ -34,30 +35,31 @@ The objective is to master the full engineering path from a basic backend servic
 
 ```text
 Milestone 3: File Upload & Document Processing
-Current branch: feature/4-service-architecture-and-settings
-Focus: Move backend to a professional src package architecture and prepare service-based structure
+Current branch: feature/5-response-signals-and-api-standards
+Focus: Add response signals, API standards, settings injection, and file validation configuration
 ```
 
-This branch starts Milestone 3 by restructuring the backend into a long-term architecture before adding the document upload endpoint.
+This branch completes the second part of Milestone 3 by introducing a centralized response signal system and cleaner API response conventions before implementing the real document upload endpoint.
 
 Current focus:
 
-- move FastAPI backend code into `src/ragforge/`
-- introduce a production-oriented `src` layout
-- prepare a service-oriented structure
-- add `core/`, `services/`, `models/`, `schemas/`, `utils/`, and `exceptions/`
-- move detailed documentation into `docs/`
-- keep the main README short and strategic
-- prepare the project for future document upload logic
+- create centralized response signals using Python Enum
+- organize enum-related code inside `models/enums/`
+- standardize the health endpoint response with a controlled signal
+- use FastAPI dependency injection with `Depends(get_settings)`
+- extend application settings for future file validation
+- prepare upload-related environment variables
+- keep routes thin and predictable
+- prepare the backend for future upload validation, storage, and document processing logic
 
 ---
 
 ## 🧱 Current Architecture
 
-RAGForge now follows a **production-oriented FastAPI `src` architecture**.
+RAGForge follows a **production-oriented FastAPI `src` architecture**.
 
 ```text
-Route → Service → Storage / Database / Vector DB / LLM
+Route → Settings / Response Standards → Service → Storage / Database / Vector DB / LLM
 ```
 
 The application code lives inside:
@@ -66,7 +68,7 @@ The application code lives inside:
 src/ragforge/
 ```
 
-Recommended structure:
+Current structure:
 
 ```text
 ragforge/
@@ -101,9 +103,18 @@ ragforge/
         ├── __init__.py
         ├── main.py
         ├── core/
+        │   ├── __init__.py
+        │   └── config.py
         ├── routes/
+        │   ├── __init__.py
+        │   ├── base.py
+        │   └── health.py
         ├── services/
         ├── models/
+        │   ├── __init__.py
+        │   └── enums/
+        │       ├── __init__.py
+        │       └── response_signals.py
         ├── schemas/
         ├── utils/
         └── exceptions/
@@ -131,13 +142,27 @@ ragforge/
 - ✅ Swagger documentation available
 - ✅ API version prefix added with `/api/v1`
 
-### Milestone 3 — Current Branch
+### Milestone 3 — Branch 1: Service Architecture and Settings
 
 - ✅ Professional `src/ragforge/` architecture introduced
 - ✅ Application code moved away from the repository root
 - ✅ Documentation split into the `docs/` folder
 - ✅ Runtime storage prepared with `storage/uploads/`
 - ✅ Project prepared for future service-based document upload
+
+### Milestone 3 — Branch 2: Response Signals and API Standards
+
+- ✅ Centralized API response signals added with Python Enum
+- ✅ Enum files organized under `src/ragforge/models/enums/`
+- ✅ Health endpoint updated with a controlled response signal
+- ✅ Base and health routes updated to use FastAPI dependency injection
+- ✅ Application settings loaded through `core/config.py`
+- ✅ Upload-related configuration prepared:
+  - `FILE_MAX_SIZE_MB`
+  - `FILE_ALLOWED_EXTENSIONS`
+  - `FILE_ALLOWED_MIME_TYPES`
+- ✅ `.env.example` updated with required application and file settings
+- ✅ API response structure prepared for future upload validation and storage logic
 
 ---
 
@@ -146,10 +171,90 @@ ragforge/
 | Method | Endpoint | Status | Description |
 |---|---|---|---|
 | GET | `/api/v1/` | ✅ Implemented | Returns application metadata |
-| GET | `/api/v1/health/` | ✅ Implemented | Returns API health status |
+| GET | `/api/v1/health/` | ✅ Implemented | Returns API health status with a standardized signal |
 | POST | `/api/v1/documents/upload/{project_id}` | ⏳ Planned | Uploads a document for a project |
 | GET | `/docs` | ✅ Implemented | Opens FastAPI Swagger UI |
 | GET | `/redoc` | ✅ Implemented | Opens ReDoc documentation |
+
+---
+
+## 📡 Response Signals
+
+RAGForge now uses centralized response signals to make API responses predictable and easier to consume by frontend clients, workers, services, and future agentic layers.
+
+Response signals are stored in:
+
+```text
+src/ragforge/models/enums/response_signals.py
+```
+
+Current response signal enum:
+
+```python
+from enum import Enum
+
+
+class ResponseSignal(str, Enum):
+    APP_HEALTHY = 'app_healthy'
+
+    FILE_VALIDATION_SUCCESS = 'file_validation_success'
+    FILE_VALIDATION_FAILED = 'file_validation_failed'
+    FILE_TYPE_NOT_SUPPORTED = 'file_type_not_supported'
+    FILE_SIZE_EXCEEDED = 'file_size_exceeded'
+
+    FILE_UPLOAD_SUCCESS = 'file_upload_success'
+    FILE_UPLOAD_FAILED = 'file_upload_failed'
+
+    INTERNAL_SERVER_ERROR = 'internal_server_error'
+```
+
+Example health response:
+
+```json
+{
+  "signal": "app_healthy",
+  "status": "healthy",
+  "app_name": "RAGForge",
+  "app_version": "0.1.0",
+  "environment": "development",
+  "timestamp": "2026-05-15T20:00:00+00:00"
+}
+```
+
+---
+
+## ⚙️ Settings and File Configuration
+
+Application configuration is centralized in:
+
+```text
+src/ragforge/core/config.py
+```
+
+The settings layer currently supports:
+
+- application name
+- application version
+- application environment
+- maximum accepted file size
+- allowed file extensions
+- allowed MIME types
+
+Example `.env.example`:
+
+```env
+APP_NAME="RAGForge"
+APP_VERSION="0.1.0"
+APP_ENV="development"
+
+FILE_MAX_SIZE_MB=10
+FILE_ALLOWED_EXTENSIONS=["pdf", "txt", "docx"]
+FILE_ALLOWED_MIME_TYPES=["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+
+OPENAI_API_KEY=""
+```
+
+The real `.env` file is private and must never be committed to GitHub.
 
 ---
 
@@ -175,7 +280,7 @@ cp .env.example .env
 
 ### 4. Run the API
 
-Because the FastAPI app now lives inside `src/ragforge/main.py`, run:
+Because the FastAPI app lives inside `src/ragforge/main.py`, run:
 
 ```bash
 uvicorn src.ragforge.main:app --reload --host 127.0.0.1 --port 8000
@@ -203,29 +308,30 @@ Health route:
 curl http://127.0.0.1:8000/api/v1/health/
 ```
 
----
+Swagger UI:
 
-## ⚙️ Environment Variables
-
-Example `.env.example`:
-
-```env
-APP_NAME=RAGForge
-APP_VERSION=0.1.0
-APP_ENV=development
-
-FILE_ALLOWED_TYPES=application/pdf,text/plain,text/markdown
-FILE_MAX_SIZE_MB=10
-FILE_DEFAULT_CHUNK_SIZE=524288
+```text
+http://127.0.0.1:8000/docs
 ```
 
-The real `.env` file is private and must never be committed to GitHub.
+Expected health response:
+
+```json
+{
+  "signal": "app_healthy",
+  "status": "healthy",
+  "app_name": "RAGForge",
+  "app_version": "0.1.0",
+  "environment": "development",
+  "timestamp": "..."
+}
+```
 
 ---
 
 ## 📚 Documentation
 
-The detailed documentation is now organized inside the `docs/` folder.
+The detailed documentation is organized inside the `docs/` folder.
 
 | Document | Purpose |
 |---|---|
@@ -244,7 +350,10 @@ The main README is intentionally short. Long explanations belong in `docs/`.
 |---|---|---|
 | M1 | 🧱 Project Bootstrap & Environment | ✅ Completed |
 | M2 | ⚙️ FastAPI Backend Foundation | ✅ Completed |
-| M3 | 📄 File Upload & Document Processing | 🚧 In Progress |
+| M3.1 | 🧱 Service Architecture and Settings | ✅ Completed |
+| M3.2 | 📡 Response Signals and API Standards | ✅ Completed |
+| M3.3 | 🗂️ Project Storage Service | ⏳ Next |
+| M3.4 | 📄 Document Upload Endpoint | ⏳ Planned |
 | M4 | ✂️ Text Extraction & Chunking | ⏳ Planned |
 | M5 | 🗄️ PostgreSQL Metadata Layer | ⏳ Planned |
 | M6 | 🧬 Embeddings & Qdrant Vector Search | ⏳ Planned |
@@ -268,13 +377,19 @@ Milestone → Issue → Branch → Pull Request → Merge
 Current branch:
 
 ```text
-feature/4-service-architecture-and-settings
+feature/5-response-signals-and-api-standards
 ```
 
 Recommended commit for this branch:
 
 ```bash
-git commit -m "refactor: move backend to src package architecture"
+git commit -m "feat: add response signals and API standards"
+```
+
+Next branch:
+
+```text
+feature/6-project-storage-service
 ```
 
 ---
@@ -285,6 +400,11 @@ RAGForge follows these principles:
 
 - keep routes thin
 - move business logic to services
+- centralize configuration in `core/config.py`
+- use FastAPI dependency injection where appropriate
+- organize enum values under `models/enums/`
+- use controlled response signals instead of duplicated raw strings
+- prepare validation rules before implementing upload logic
 - keep runtime data outside source code
 - keep project-level files at the repository root
 - use environment-based configuration
@@ -301,7 +421,4 @@ RAGForge follows these principles:
 
 AI engineer and system builder focused on production-grade RAG, agentic AI systems, vector databases, observability, and deployable AI architectures.
 
-My objective is to build practical, robust, and scalable AI systems that can evolve from 
-learning projects into real products, client solutions, and future agentic platforms.
-
-
+My objective is to build practical, robust, and scalable AI systems that can evolve from learning projects into real products, client solutions, and future agentic platforms.

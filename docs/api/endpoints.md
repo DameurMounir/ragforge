@@ -8,7 +8,7 @@ RAGForge uses a versioned API structure:
 /api/v1
 ```
 
-The goal is to keep the API clean, stable, and ready for future expansion.
+The goal is to keep the API clean, stable, predictable, and ready for future expansion.
 
 ---
 
@@ -32,6 +32,12 @@ Swagger documentation:
 http://127.0.0.1:8000/docs
 ```
 
+ReDoc documentation:
+
+```text
+http://127.0.0.1:8000/redoc
+```
+
 ---
 
 ## 📌 Current Endpoints
@@ -39,9 +45,10 @@ http://127.0.0.1:8000/docs
 | Method | Endpoint | Status | Description |
 |---|---|---|---|
 | GET | `/api/v1/` | ✅ Implemented | Returns basic application metadata |
-| GET | `/api/v1/health/` | ✅ Implemented | Returns API health status |
+| GET | `/api/v1/health/` | ✅ Implemented | Returns API health status with a standardized response signal |
 | POST | `/api/v1/documents/upload/{project_id}` | ⏳ Planned | Uploads a document for a project |
 | GET | `/docs` | ✅ Implemented | Opens FastAPI Swagger UI |
+| GET | `/redoc` | ✅ Implemented | Opens ReDoc documentation |
 
 ---
 
@@ -84,7 +91,7 @@ curl http://127.0.0.1:8000/api/v1/
 | `message` | string | Basic welcome message |
 | `app_name` | string | Application name loaded from environment variables |
 | `app_version` | string | Current application version |
-| `environment` | string | Current environment, such as `development` |
+| `environment` | string | Current runtime environment, such as `development` |
 | `timestamp` | string | UTC timestamp of the response |
 
 ---
@@ -117,6 +124,7 @@ curl http://127.0.0.1:8000/api/v1/health/
 
 ```json
 {
+  "signal": "app_healthy",
   "status": "healthy",
   "app_name": "RAGForge",
   "app_version": "0.1.0",
@@ -131,11 +139,28 @@ curl http://127.0.0.1:8000/api/v1/health/
 
 | Field | Type | Description |
 |---|---|---|
+| `signal` | string | Stable API response signal |
 | `status` | string | Current API health status |
 | `app_name` | string | Application name |
 | `app_version` | string | Current application version |
 | `environment` | string | Current runtime environment |
 | `timestamp` | string | UTC timestamp of the health check |
+
+---
+
+## Current Health Signal
+
+The health endpoint currently uses:
+
+```text
+app_healthy
+```
+
+This signal is defined in:
+
+```text
+src/ragforge/models/enums/response_signals.py
+```
 
 ---
 
@@ -158,7 +183,7 @@ Later, this endpoint can be extended or split into more detailed checks:
 ## Status
 
 ```text
-Planned for Milestone 3
+Planned for a later Milestone 3 branch
 ```
 
 ## Purpose
@@ -170,7 +195,8 @@ This will be the first real document ingestion endpoint in RAGForge.
 The endpoint will:
 
 - receive a document
-- validate the file type
+- validate the file extension
+- validate the file MIME type
 - validate the file size
 - create a project-specific upload folder
 - generate a safe stored filename
@@ -220,33 +246,77 @@ Expected form field:
 
 ---
 
-## Supported File Types
+## File Validation Configuration
 
-Initial supported content types:
+File validation rules are configured from environment variables and loaded through:
 
 ```text
-application/pdf
-text/plain
-text/markdown
+src/ragforge/core/config.py
+```
+
+Current configuration keys:
+
+```env
+FILE_MAX_SIZE_MB=10
+FILE_ALLOWED_EXTENSIONS=["pdf", "txt", "docx"]
+FILE_ALLOWED_MIME_TYPES=["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+```
+
+---
+
+## Supported File Extensions
+
+Initial supported extensions:
+
+```text
+pdf
+txt
+docx
 ```
 
 Later, RAGForge may support:
 
 ```text
+md
+csv
+json
+html
+pptx
+xlsx
+```
+
+---
+
+## Supported MIME Types
+
+Initial supported MIME types:
+
+```text
+application/pdf
+text/plain
 application/vnd.openxmlformats-officedocument.wordprocessingml.document
+```
+
+Later, RAGForge may support:
+
+```text
+text/markdown
 text/csv
 application/json
+text/html
+application/vnd.openxmlformats-officedocument.presentationml.presentation
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 ```
 
 ---
 
 ## Request Example with curl
 
-Upload a Markdown file:
+Upload a text file:
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/api/v1/documents/upload/default" \
-  -F "file=@README.md"
+  -F "file=@notes.txt"
 ```
 
 Upload a PDF file:
@@ -258,12 +328,12 @@ curl -X POST "http://127.0.0.1:8000/api/v1/documents/upload/default" \
 
 ---
 
-## Successful Upload Response
+## Planned Successful Upload Response
 
 ```json
 {
-  "signal": "document_upload_success",
-  "message": "Document uploaded successfully.",
+  "signal": "file_upload_success",
+  "message": "File uploaded successfully.",
   "document_id": "8f4d2f6e-2f64-4b3c-9e0c-31c25d52e021",
   "project_id": "default",
   "original_filename": "lesson.pdf",
@@ -292,11 +362,11 @@ curl -X POST "http://127.0.0.1:8000/api/v1/documents/upload/default" \
 
 ---
 
-# ⚠️ Error Responses
+# ⚠️ Planned Error Responses
 
 ## Unsupported File Type
 
-Returned when the uploaded file type is not allowed.
+Returned when the uploaded file extension or MIME type is not allowed.
 
 ### Recommended HTTP Status
 
@@ -308,12 +378,17 @@ Returned when the uploaded file type is not allowed.
 
 ```json
 {
-  "signal": "document_type_not_supported",
+  "signal": "file_type_not_supported",
   "message": "Unsupported file type.",
-  "allowed_types": [
+  "allowed_extensions": [
+    "pdf",
+    "txt",
+    "docx"
+  ],
+  "allowed_mime_types": [
     "application/pdf",
     "text/plain",
-    "text/markdown"
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   ]
 }
 ```
@@ -334,9 +409,30 @@ Returned when the uploaded file exceeds the maximum allowed file size.
 
 ```json
 {
-  "signal": "document_size_exceeded",
+  "signal": "file_size_exceeded",
   "message": "Uploaded file exceeds the maximum allowed size.",
   "max_size_mb": 10
+}
+```
+
+---
+
+## File Validation Failed
+
+Returned when file validation fails for a generic or unexpected validation reason.
+
+### Recommended HTTP Status
+
+```text
+400 Bad Request
+```
+
+### Example Response
+
+```json
+{
+  "signal": "file_validation_failed",
+  "message": "File validation failed."
 }
 ```
 
@@ -356,8 +452,29 @@ Returned when the upload process fails unexpectedly.
 
 ```json
 {
-  "signal": "document_upload_failed",
-  "message": "Document upload failed."
+  "signal": "file_upload_failed",
+  "message": "File upload failed."
+}
+```
+
+---
+
+## Internal Server Error
+
+Returned when an unexpected backend error occurs.
+
+### Recommended HTTP Status
+
+```text
+500 Internal Server Error
+```
+
+### Example Response
+
+```json
+{
+  "signal": "internal_server_error",
+  "message": "Internal server error."
 }
 ```
 
@@ -367,20 +484,43 @@ Returned when the upload process fails unexpectedly.
 
 RAGForge uses stable response signals to make API responses predictable and easy to test.
 
-Planned signals:
+Current signals:
 
 ```text
 app_healthy
-document_upload_success
-document_upload_failed
-document_type_not_supported
-document_size_exceeded
+file_validation_success
+file_validation_failed
+file_type_not_supported
+file_size_exceeded
+file_upload_success
+file_upload_failed
+internal_server_error
 ```
 
-These signals will be defined in:
+These signals are defined in:
 
 ```text
-src/ragforge/models/response_signals.py
+src/ragforge/models/enums/response_signals.py
+```
+
+Current enum structure:
+
+```python
+from enum import Enum
+
+
+class ResponseSignal(str, Enum):
+    APP_HEALTHY = 'app_healthy'
+
+    FILE_VALIDATION_SUCCESS = 'file_validation_success'
+    FILE_VALIDATION_FAILED = 'file_validation_failed'
+    FILE_TYPE_NOT_SUPPORTED = 'file_type_not_supported'
+    FILE_SIZE_EXCEEDED = 'file_size_exceeded'
+
+    FILE_UPLOAD_SUCCESS = 'file_upload_success'
+    FILE_UPLOAD_FAILED = 'file_upload_failed'
+
+    INTERNAL_SERVER_ERROR = 'internal_server_error'
 ```
 
 ---
@@ -393,7 +533,7 @@ The API should not trust:
 
 - uploaded filenames
 - file extensions
-- content types
+- MIME types
 - file sizes
 - project IDs
 - uploaded content
@@ -515,7 +655,7 @@ Planned future endpoints:
 The current API architecture follows:
 
 ```text
-Route → Service → Storage / Database / Vector DB / LLM
+Route → Settings / Response Standards → Service → Storage / Database / Vector DB / LLM
 ```
 
 For more details, see:
