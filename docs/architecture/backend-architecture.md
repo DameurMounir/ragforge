@@ -1,38 +1,43 @@
-# 🧱 Backend Architecture
+# 🧱 RAGForge Backend Architecture
 
-This document explains the current backend architecture of **RAGForge** and the long-term structure that will support future RAG, vector search, background jobs, and agentic AI features.
+This document defines the **stable backend architecture** of RAGForge.
 
-RAGForge uses a **production-oriented FastAPI `src/` architecture** with a **service-based structure**.
+It is intentionally written as a long-term architecture reference for the whole project. It should **not be updated at every branch**. It should only change when the real system architecture changes in a major way, for example when adding a database layer, vector database layer, background worker layer, or deployment architecture.
 
 ---
 
-## 🎯 Architecture Goal
+## 🎯 Architecture Purpose
 
-The goal of the backend architecture is to keep the project:
+RAGForge is a production-oriented **Retrieval-Augmented Generation (RAG)** backend.
 
-- clean
-- modular
-- testable
-- scalable
-- easy to document
-- ready for production
-- ready for future AI engineering layers
+Its purpose is to provide a clean, modular, and scalable backend foundation for:
 
-RAGForge is not designed as a small script or notebook demo.
+- document upload
+- project-based storage
+- file validation
+- metadata management
+- text extraction
+- chunking
+- embeddings
+- vector search
+- retrieval
+- grounded answer generation
+- background processing
+- production deployment
 
-It is designed as a backend platform that can progressively evolve from a basic FastAPI API into a complete RAG and agentic AI system.
+RAGForge may later be used as a **tool or backend service inside agent systems**, but the core architecture of this project remains focused on building a strong RAG platform first.
 
 ---
 
 ## 🧠 Core Architecture Principle
 
-The main principle is:
+The main architecture principle is:
 
 ```text
-Route → Service → Storage / Database / Vector DB / LLM
+Route → Service → Infrastructure
 ```
 
-Each layer has a clear responsibility.
+More specifically:
 
 ```text
 HTTP Request
@@ -41,14 +46,54 @@ FastAPI Route
     ↓
 Service Layer
     ↓
-Storage / Database / Vector Store / LLM
+Storage / Database / Vector Database / LLM
     ↓
 API Response
 ```
 
+Each layer has a clear responsibility.
+
+Routes should remain thin.  
+Services contain business logic.  
+Infrastructure layers handle persistence, storage, vector search, model providers, and background execution.
+
 ---
 
-## 📦 Recommended Project Structure
+## 🧩 High-Level RAGForge Architecture
+
+```text
+Client / API Consumer
+        ↓
+FastAPI API Layer
+        ↓
+Service Layer
+        ↓
+Document Storage
+        ↓
+Metadata Database
+        ↓
+Text Extraction
+        ↓
+Chunking Pipeline
+        ↓
+Embedding Service
+        ↓
+Vector Database
+        ↓
+Retrieval Service
+        ↓
+LLM Answer Generation
+        ↓
+Grounded API Response
+```
+
+This is the long-term direction of the project.
+
+---
+
+## 📦 Stable Project Structure
+
+RAGForge follows a professional Python `src/` layout.
 
 ```text
 ragforge/
@@ -79,9 +124,7 @@ ragforge/
 │       └── .gitkeep
 │
 ├── tests/
-│   ├── __init__.py
-│   ├── test_base.py
-│   └── test_health.py
+│   └── __init__.py
 │
 └── src/
     └── ragforge/
@@ -100,46 +143,47 @@ ragforge/
         │
         ├── services/
         │   ├── __init__.py
+        │   ├── base_service.py
+        │   ├── project_service.py
         │   ├── document_service.py
-        │   └── project_service.py
+        │   ├── extraction_service.py
+        │   ├── chunking_service.py
+        │   ├── embedding_service.py
+        │   ├── vector_store_service.py
+        │   ├── retrieval_service.py
+        │   └── rag_service.py
         │
         ├── models/
         │   ├── __init__.py
-        │   └── response_signals.py
+        │   └── enums/
+        │       ├── __init__.py
+        │       └── response_signals.py
         │
         ├── schemas/
-        │   ├── __init__.py
-        │   └── document_schema.py
+        │   └── __init__.py
+        │
+        ├── repositories/
+        │   └── __init__.py
+        │
+        ├── workers/
+        │   └── __init__.py
         │
         ├── utils/
-        │   ├── __init__.py
-        │   └── file_utils.py
+        │   └── __init__.py
         │
         └── exceptions/
-            ├── __init__.py
-            └── document_exceptions.py
+            └── __init__.py
 ```
+
+Not every file exists from the beginning. Some files appear progressively as milestones evolve.
+
+This document describes the intended stable architecture, not only the current branch state.
 
 ---
 
-# 🧩 Why Use `src/ragforge/`?
+# 1. Repository Root
 
-The `src/ragforge/` folder contains the real Python application package.
-
-This separates project-level files from application code.
-
-```text
-Repository root → project files
-src/ragforge/   → Python application package
-```
-
-This is cleaner than placing all code directly in the project root.
-
----
-
-## ✅ What Belongs in the Project Root?
-
-The project root contains files and folders related to the whole repository:
+The repository root contains project-level files.
 
 ```text
 README.md
@@ -154,15 +198,73 @@ storage/
 tests/
 ```
 
-These are not Python package modules.
+These files are not part of the Python application package.
 
-They are project-level assets, configuration, documentation, runtime storage, and tests.
+They are used for:
+
+- documentation
+- dependency management
+- environment configuration
+- runtime storage
+- testing
+- project resources
 
 ---
 
-## ✅ What Belongs in `src/ragforge/`?
+## Why `.env` stays at the root
 
-The `src/ragforge/` folder contains importable Python application code:
+`.env` is a runtime configuration file.
+
+It belongs to the project environment, not inside the Python package.
+
+Correct:
+
+```text
+.env
+.env.example
+```
+
+Incorrect:
+
+```text
+src/ragforge/.env
+```
+
+The real `.env` file must never be committed to GitHub.
+
+---
+
+## Why `storage/` stays at the root
+
+Uploaded files and runtime documents are data, not source code.
+
+Correct:
+
+```text
+storage/uploads/
+```
+
+Incorrect:
+
+```text
+src/ragforge/uploads/
+```
+
+Keeping runtime data outside `src/` keeps the Python package clean.
+
+---
+
+# 2. Application Package
+
+The real application code lives in:
+
+```text
+src/ragforge/
+```
+
+This makes RAGForge an importable Python package.
+
+The package contains:
 
 ```text
 main.py
@@ -171,53 +273,62 @@ routes/
 services/
 models/
 schemas/
+repositories/
+workers/
 utils/
 exceptions/
 ```
 
-This makes RAGForge a clean Python package.
+This structure supports clean growth from a small FastAPI backend into a full RAG backend.
 
 ---
 
-# 🚀 Application Entry Point
+# 3. FastAPI Application Entry Point
 
-## `src/ragforge/main.py`
+## File
 
-This file creates the FastAPI application and includes the routers.
+```text
+src/ragforge/main.py
+```
 
-Example:
+Responsibilities:
+
+- create the FastAPI app
+- load application settings
+- include routers
+- define global app metadata
+- prepare the API entry point
+
+Example concept:
 
 ```python
 from fastapi import FastAPI
-from dotenv import load_dotenv
 
+from src.ragforge.core.config import get_settings
 from src.ragforge.routes.base import base_router
 from src.ragforge.routes.health import health_router
+from src.ragforge.routes.documents import documents_router
 
 
-load_dotenv('.env')
+settings = get_settings()
+
 
 app = FastAPI(
-    title='RAGForge API',
-    version='0.1.0',
-    description='Production-oriented RAG and Agentic AI backend'
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION
 )
+
 
 app.include_router(base_router)
 app.include_router(health_router)
-```
-
-Later, when document upload is implemented:
-
-```python
-from src.ragforge.routes.documents import documents_router
-
 app.include_router(documents_router)
 ```
 
+`main.py` should not contain business logic.
+
 ---
 
-# 🌐 Routes Layer
+# 4. Routes Layer
 
 ## Folder
 
@@ -227,53 +338,50 @@ src/ragforge/routes/
 
 Routes define HTTP endpoints.
 
-Routes should stay thin.
+Their responsibility is to:
 
-They should only:
-
-- receive requests
-- read path/query/body parameters
+- receive HTTP requests
+- read path parameters
+- read query parameters
+- read request bodies
+- receive uploaded files
 - call services
-- return responses
+- return API responses
 
-Routes should not contain heavy business logic.
+Routes should remain thin.
+
+They should not contain heavy validation, storage logic, extraction logic, chunking logic, embedding logic, or retrieval logic.
 
 ---
 
-## Current Routes
+## Route Examples
+
+Current and future route groups may include:
 
 ```text
 routes/base.py
 routes/health.py
-```
-
-Later:
-
-```text
 routes/documents.py
+routes/projects.py
 routes/search.py
 routes/rag.py
 routes/jobs.py
-routes/projects.py
+```
+
+Example endpoint groups:
+
+```text
+GET  /api/v1/
+GET  /api/v1/health/
+POST /api/v1/documents/upload/{project_id}
+POST /api/v1/projects/{project_id}/ask
+GET  /api/v1/documents/{document_id}
+GET  /api/v1/jobs/{job_id}
 ```
 
 ---
 
-## Example Route Responsibility
-
-A future document route should look like this conceptually:
-
-```python
-@documents_router.post('/upload/{project_id}')
-async def upload_document(project_id: str, file: UploadFile):
-    return await document_service.upload_document(project_id, file)
-```
-
-The route receives the request, then delegates logic to the service.
-
----
-
-# ⚙️ Services Layer
+# 5. Services Layer
 
 ## Folder
 
@@ -281,63 +389,170 @@ The route receives the request, then delegates logic to the service.
 src/ragforge/services/
 ```
 
-Services contain business logic.
+Services contain the business logic of the application.
 
-This is one of the most important folders in RAGForge.
+This is the most important layer in RAGForge.
 
-Services will handle:
-
-- document validation
-- project storage
-- file saving
-- text extraction
-- chunking
-- embeddings
-- vector indexing
-- retrieval
-- answer generation
-- background job coordination
-
----
-
-## Current Services
-
-For Milestone 3, the planned services are:
-
-```text
-services/document_service.py
-services/project_service.py
-```
-
----
-
-## Why Services Instead of Controllers?
-
-Classical MVC uses controllers.
-
-However, RAGForge is not a classical web application with HTML views.
-
-RAGForge is an AI backend platform.
-
-A cleaner architecture is:
-
-```text
-Route → Service → Infrastructure
-```
-
-Services can be reused later by:
+Services should be reusable by:
 
 - FastAPI routes
-- Celery workers
-- CLI scripts
+- background workers
 - tests
-- LangGraph agents
-
-This is why `services/` is preferred over `controllers/`.
+- command-line scripts
+- future orchestration flows
+- future agent systems that call RAGForge as a tool
 
 ---
 
-# 🧠 Core Layer
+## Core Service Types
+
+### `BaseService`
+
+Shared service foundation.
+
+Responsibilities:
+
+- load centralized settings
+- expose common paths
+- provide common helper methods
+- avoid repeated low-level setup code
+
+---
+
+### `ProjectService`
+
+Manages project-based storage and project path resolution.
+
+Responsibilities:
+
+- validate `project_id`
+- prevent path traversal
+- resolve upload directories
+- create or reuse project folders
+- keep project path logic outside routes
+
+Target storage:
+
+```text
+storage/uploads/{project_id}/documents/
+```
+
+Important:
+
+```text
+ProjectService does not create a new project folder for every document.
+It creates or reuses one folder per project.
+```
+
+---
+
+### `DocumentService`
+
+Handles upload-related document logic.
+
+Responsibilities:
+
+- validate uploaded file MIME type
+- validate uploaded file size
+- clean original filenames
+- generate document IDs
+- generate stored filenames
+- prepare final storage paths
+- coordinate with `ProjectService`
+
+---
+
+### `ExtractionService`
+
+Future service responsible for extracting text.
+
+Responsibilities:
+
+- extract text from PDF
+- extract text from TXT
+- extract text from DOCX
+- normalize extracted content
+- prepare extracted content for chunking
+
+---
+
+### `ChunkingService`
+
+Future service responsible for splitting text.
+
+Responsibilities:
+
+- split long documents into chunks
+- preserve chunk order
+- attach document metadata
+- prepare chunks for embeddings
+
+---
+
+### `EmbeddingService`
+
+Future service responsible for vector embeddings.
+
+Responsibilities:
+
+- connect to embedding provider
+- generate embeddings for chunks
+- generate embeddings for queries
+- handle embedding configuration
+
+---
+
+### `VectorStoreService`
+
+Future service responsible for vector database operations.
+
+Responsibilities:
+
+- create collections or indexes
+- insert vectors
+- search vectors
+- delete vectors
+- update payload metadata
+
+Possible vector stores:
+
+```text
+Qdrant
+PgVector
+FAISS
+```
+
+---
+
+### `RetrievalService`
+
+Future service responsible for retrieving relevant context.
+
+Responsibilities:
+
+- receive user query
+- generate query embedding
+- search vector database
+- filter by project or document
+- return relevant chunks
+
+---
+
+### `RAGService`
+
+Future service responsible for full RAG answer generation.
+
+Responsibilities:
+
+- receive user question
+- call `RetrievalService`
+- build grounded prompt
+- call LLM provider
+- return answer with sources
+
+---
+
+# 6. Core Layer
 
 ## Folder
 
@@ -345,7 +560,7 @@ This is why `services/` is preferred over `controllers/`.
 src/ragforge/core/
 ```
 
-The `core/` folder contains global configuration and core application settings.
+The `core/` folder contains core application configuration.
 
 Main file:
 
@@ -355,15 +570,16 @@ core/config.py
 
 ---
 
-## Purpose of `core/config.py`
+## `core/config.py`
 
-This file centralizes environment configuration.
+This file centralizes configuration.
 
-Instead of using `os.getenv()` everywhere, RAGForge should use Pydantic Settings.
+RAGForge should use Pydantic Settings instead of scattered `os.getenv()` calls.
 
 Example:
 
 ```python
+from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -372,46 +588,44 @@ class Settings(BaseSettings):
     APP_VERSION: str = '0.1.0'
     APP_ENV: str = 'development'
 
-    FILE_ALLOWED_TYPES: str = 'application/pdf,text/plain,text/markdown'
-    FILE_MAX_SIZE_MB: int = 10
-    FILE_DEFAULT_CHUNK_SIZE: int = 524288
+    FILE_MAX_SIZE_MB: int = 20
+    FILE_DEFAULT_CHUNK_SIZE: int = 1048576
+
+    FILE_ALLOWED_EXTENSIONS: list[str] = ['pdf', 'txt', 'docx']
+    FILE_ALLOWED_MIME_TYPES: list[str] = [
+        'application/pdf',
+        'text/plain',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ]
+
+    UPLOAD_DIR: str = 'storage/uploads'
+    PROJECT_DOCUMENTS_DIR: str = 'documents'
 
     model_config = SettingsConfigDict(
         env_file='.env',
-        env_file_encoding='utf-8'
+        env_file_encoding='utf-8',
+        extra='ignore'
     )
 
 
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
 ```
 
-Then any part of the app can use:
-
-```python
-from src.ragforge.core.config import settings
-
-app_name = settings.APP_NAME
-```
-
----
-
-## Why Pydantic Settings?
-
-Pydantic Settings provides:
+Benefits:
 
 - typed configuration
 - default values
 - validation
+- centralized settings
 - clean `.env` loading
-- centralized configuration
 - easier testing
 - cleaner imports
 
-This is more professional than spreading `os.getenv()` across the codebase.
-
 ---
 
-# 🧾 Models Layer
+# 7. Models Layer
 
 ## Folder
 
@@ -419,12 +633,16 @@ This is more professional than spreading `os.getenv()` across the codebase.
 src/ragforge/models/
 ```
 
-The `models/` folder contains application-level models, enums, and later database models.
+The `models/` folder contains application-level models and enums.
 
-For Milestone 3, it will contain:
+Current example:
 
 ```text
-models/response_signals.py
+models/
+├── __init__.py
+└── enums/
+    ├── __init__.py
+    └── response_signals.py
 ```
 
 ---
@@ -441,41 +659,29 @@ from enum import Enum
 
 class ResponseSignal(str, Enum):
     APP_HEALTHY = 'app_healthy'
-    DOCUMENT_UPLOAD_SUCCESS = 'document_upload_success'
-    DOCUMENT_UPLOAD_FAILED = 'document_upload_failed'
-    DOCUMENT_TYPE_NOT_SUPPORTED = 'document_type_not_supported'
-    DOCUMENT_SIZE_EXCEEDED = 'document_size_exceeded'
+
+    FILE_VALIDATION_SUCCESS = 'file_validation_success'
+    FILE_VALIDATION_FAILED = 'file_validation_failed'
+    FILE_TYPE_NOT_SUPPORTED = 'file_type_not_supported'
+    FILE_SIZE_EXCEEDED = 'file_size_exceeded'
+
+    FILE_UPLOAD_SUCCESS = 'file_upload_success'
+    FILE_UPLOAD_FAILED = 'file_upload_failed'
+
+    INTERNAL_SERVER_ERROR = 'internal_server_error'
 ```
+
+Response signals help with:
+
+- predictable API responses
+- frontend integration
+- testing
+- refactoring
+- clean API standards
 
 ---
 
-## Why Use Enums?
-
-Enums prevent random response strings from spreading across the code.
-
-Instead of this:
-
-```python
-return {'signal': 'upload ok'}
-```
-
-Use this:
-
-```python
-return {'signal': ResponseSignal.DOCUMENT_UPLOAD_SUCCESS}
-```
-
-Benefits:
-
-- consistent responses
-- easier testing
-- easier frontend integration
-- easier refactoring
-- cleaner API documentation
-
----
-
-# 📐 Schemas Layer
+# 8. Schemas Layer
 
 ## Folder
 
@@ -483,97 +689,102 @@ Benefits:
 src/ragforge/schemas/
 ```
 
-Schemas define request and response shapes using Pydantic.
+Schemas define request and response structures using Pydantic.
 
-For Milestone 3, a future file may be:
-
-```text
-schemas/document_schema.py
-```
-
-Possible future schemas:
+Future examples:
 
 ```text
 DocumentUploadResponse
 DocumentMetadataResponse
 DocumentListResponse
+ProjectCreateRequest
+ProjectResponse
 RAGAnswerRequest
 RAGAnswerResponse
 SearchRequest
 SearchResponse
+JobStatusResponse
 ```
 
-Schemas help FastAPI generate better OpenAPI documentation.
+Schemas help:
+
+- validate request bodies
+- standardize responses
+- improve OpenAPI documentation
+- keep routes clean
 
 ---
 
-# 🛠️ Utils Layer
+# 9. Repositories Layer
 
 ## Folder
 
 ```text
-src/ragforge/utils/
+src/ragforge/repositories/
 ```
 
-The `utils/` folder contains small reusable helper functions.
+This folder can be introduced when the database layer appears.
 
-Example:
+Repositories handle database access.
+
+They should not contain business logic.
+
+Responsibilities:
+
+- create database records
+- read database records
+- update database records
+- delete database records
+- isolate SQL/database code from services
+
+Example future files:
 
 ```text
-utils/file_utils.py
+project_repository.py
+document_repository.py
+chunk_repository.py
+job_repository.py
 ```
 
-Possible utility functions:
-
-- sanitize filenames
-- extract file extensions
-- generate safe names
-- format file sizes
-- normalize project IDs
-
-Important rule:
+Future flow:
 
 ```text
-Small reusable helpers go in utils.
-Business logic goes in services.
+Service → Repository → Database
 ```
-
-Do not put large application logic inside `utils/`.
 
 ---
 
-# 🚨 Exceptions Layer
+# 10. Database Layer
 
-## Folder
+The database becomes the source of truth for structured metadata.
+
+Future database responsibilities:
+
+- store projects
+- store documents
+- store chunks
+- store processing status
+- store upload metadata
+- store extraction status
+- store embedding status
+- store retrieval logs
+
+Conceptual tables:
 
 ```text
-src/ragforge/exceptions/
+projects
+documents
+chunks
+processing_jobs
 ```
 
-The `exceptions/` folder contains custom exceptions.
+The filesystem stores raw files.
 
-Example:
-
-```text
-exceptions/document_exceptions.py
-```
-
-Possible future exceptions:
-
-```text
-UnsupportedFileTypeError
-FileTooLargeError
-DocumentUploadError
-TextExtractionError
-EmbeddingGenerationError
-VectorStoreError
-```
-
-Custom exceptions make error handling cleaner and more explicit.
+The database stores structured metadata.
 
 ---
 
-# 📁 Storage Layer
+# 11. Storage Layer
 
 ## Folder
 
@@ -583,211 +794,208 @@ storage/
     └── .gitkeep
 ```
 
-The `storage/` folder is outside `src/` because it contains runtime data, not source code.
+The storage layer keeps uploaded runtime files.
 
-Uploaded files should be stored here during local development:
+Current target structure:
+
+```text
+storage/uploads/{project_id}/documents/{document_id}_{filename}
+```
+
+Future structure may become:
 
 ```text
 storage/uploads/{project_id}/
+├── documents/
+├── extracted/
+├── chunks/
+└── metadata/
 ```
+
+Important rules:
+
+- storage is runtime data
+- storage stays outside `src/`
+- uploaded files are ignored by Git
+- `.gitkeep` preserves the folder structure
+
+Recommended `.gitignore` rule:
+
+```gitignore
+storage/uploads/*
+!storage/uploads/.gitkeep
+```
+
+---
+
+# 12. Vector Database Layer
+
+The vector database stores embeddings for semantic search.
+
+Possible vector database options:
+
+```text
+Qdrant
+PgVector
+FAISS
+```
+
+Vector database responsibilities:
+
+- store chunk embeddings
+- store vector payload metadata
+- search by query embedding
+- filter results by project, document, or metadata
+- return relevant chunks
+
+Conceptual flow:
+
+```text
+Chunk Text
+    ↓
+Generate Embedding
+    ↓
+Store Vector + Metadata
+    ↓
+Search by Query Embedding
+    ↓
+Return Relevant Chunks
+```
+
+---
+
+# 13. Background Workers Layer
+
+Background workers are used when processing becomes slow.
+
+Possible worker tools:
+
+```text
+Celery
+Redis
+ARQ
+RQ
+```
+
+Future responsibilities:
+
+- extract text
+- chunk documents
+- generate embeddings
+- index vectors
+- update document status
+- retry failed jobs
+- run cleanup tasks
+
+Future flow:
+
+```text
+Upload File
+    ↓
+Return document_id immediately
+    ↓
+Create processing job
+    ↓
+Worker extracts text
+    ↓
+Worker chunks text
+    ↓
+Worker generates embeddings
+    ↓
+Worker indexes vectors
+    ↓
+Document status becomes ready
+```
+
+---
+
+# 14. RAG Pipeline
+
+The central RAG pipeline is:
+
+```text
+Upload Document
+    ↓
+Store Original File
+    ↓
+Extract Text
+    ↓
+Clean Text
+    ↓
+Split Into Chunks
+    ↓
+Store Metadata
+    ↓
+Generate Embeddings
+    ↓
+Index in Vector Database
+    ↓
+Retrieve Relevant Chunks
+    ↓
+Generate Grounded Answer
+```
+
+This pipeline is the core of RAGForge.
+
+---
+
+# 15. RAG Answer Generation
+
+Future answer endpoints may include:
+
+```http
+POST /api/v1/projects/{project_id}/ask
+POST /api/v1/documents/{document_id}/summary
+POST /api/v1/documents/{document_id}/quiz
+```
+
+Answer generation flow:
+
+```text
+User Question
+    ↓
+Embed Query
+    ↓
+Retrieve Relevant Chunks
+    ↓
+Build Prompt with Context
+    ↓
+Call LLM
+    ↓
+Return Grounded Answer + Sources
+```
+
+---
+
+# 16. Relation to Agent Systems
+
+RAGForge is focused first on RAG.
+
+Later, an agent system can call RAGForge as a tool.
 
 Example:
 
 ```text
-storage/uploads/default/
-storage/uploads/client_demo/
-storage/uploads/project_001/
+Agent
+  ↓ calls
+RAGForge Search / Ask API
+  ↓
+RAGForge retrieves grounded context
+  ↓
+Agent uses returned knowledge
 ```
+
+This means RAGForge can become a reliable knowledge backend for agents.
+
+However, the current architecture does not depend on agent protocols or multi-agent communication.
+
+The priority is to build a strong RAG backend first.
 
 ---
 
-## Why Not Put Uploads Inside `src/`?
+# 17. Security Principles
 
-Uploaded files are runtime data.
-
-`src/` should contain only application code.
-
-Correct:
-
-```text
-storage/uploads/
-```
-
-Incorrect:
-
-```text
-src/ragforge/uploads/
-```
-
-This separation keeps the codebase clean and avoids mixing source code with user data.
-
----
-
-# 🧪 Tests
-
-## Folder
-
-```text
-tests/
-```
-
-Tests live outside `src/`.
-
-Current tests may include:
-
-```text
-tests/test_base.py
-tests/test_health.py
-```
-
-Future tests:
-
-```text
-tests/test_document_upload.py
-tests/test_project_storage.py
-tests/test_file_validation.py
-```
-
----
-
-## Test Command
-
-```bash
-pytest -v
-```
-
----
-
-# 📚 Documentation
-
-## Folder
-
-```text
-docs/
-```
-
-The `docs/` folder contains detailed project documentation.
-
-Main sections:
-
-```text
-docs/milestones/
-docs/architecture/
-docs/setup/
-docs/api/
-```
-
-The main README should stay short. Long explanations belong in `docs/`.
-
----
-
-# 🔐 Environment Files
-
-## `.env`
-
-Private local environment file.
-
-It should never be committed.
-
-Example:
-
-```env
-APP_NAME=RAGForge
-APP_VERSION=0.1.0
-APP_ENV=development
-```
-
----
-
-## `.env.example`
-
-Public environment template.
-
-It should be committed to GitHub.
-
-Example:
-
-```env
-APP_NAME=RAGForge
-APP_VERSION=0.1.0
-APP_ENV=development
-
-FILE_ALLOWED_TYPES=application/pdf,text/plain,text/markdown
-FILE_MAX_SIZE_MB=10
-FILE_DEFAULT_CHUNK_SIZE=524288
-```
-
----
-
-## Why `.env` and `.env.example` Stay Outside `src/`
-
-Environment files are project-level runtime configuration.
-
-They are not Python application modules.
-
-They belong at the repository root.
-
-This makes setup easier:
-
-```bash
-cp .env.example .env
-```
-
----
-
-# 📦 Dependencies
-
-## `requirements.txt`
-
-The dependency file stays at the project root.
-
-It is not application code.
-
-Developers install dependencies using:
-
-```bash
-pip install -r requirements.txt
-```
-
-Docker and CI/CD will also expect dependency files at the project level.
-
----
-
-# 🚀 Running the API
-
-Because the app is inside `src/ragforge/main.py`, run:
-
-```bash
-uvicorn src.ragforge.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Swagger documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
----
-
-# 🧪 Testing Current Endpoints
-
-Base route:
-
-```bash
-curl http://127.0.0.1:8000/api/v1/
-```
-
-Health route:
-
-```bash
-curl http://127.0.0.1:8000/api/v1/health/
-```
-
----
-
-# 🛡️ Security Principles
-
-RAGForge should follow these backend security principles from the beginning:
+RAGForge should follow these security principles from the beginning.
 
 ## Do Not Trust
 
@@ -795,7 +1003,7 @@ Do not blindly trust:
 
 - uploaded filenames
 - uploaded file extensions
-- uploaded content types
+- uploaded MIME types
 - uploaded file sizes
 - project IDs
 - user input
@@ -814,29 +1022,85 @@ Do not expose:
 
 ---
 
-# 🧭 Future Evolution
+# 18. Testing Layer
 
-This architecture prepares RAGForge for:
+## Folder
 
 ```text
-FastAPI
-  ↓
-Services
-  ↓
-PostgreSQL metadata
-  ↓
-Qdrant vector database
-  ↓
-Redis/Celery background workers
-  ↓
-RAG pipelines
-  ↓
-LangGraph agents
-  ↓
-MCP tools
-  ↓
-A2A agent communication
+tests/
 ```
+
+Tests live outside `src/`.
+
+Future tests may include:
+
+```text
+test_base.py
+test_health.py
+test_document_upload.py
+test_project_storage.py
+test_file_validation.py
+test_extraction.py
+test_chunking.py
+test_retrieval.py
+```
+
+Run tests with:
+
+```bash
+pytest -v
+```
+
+---
+
+# 19. Documentation Strategy
+
+RAGForge documentation should be split by responsibility.
+
+```text
+README.md
+= short public landing page, current status, quick start, roadmap
+
+docs/milestones/
+= milestone progress, branch plans, implementation history
+
+docs/api/
+= endpoints, request examples, response examples
+
+docs/setup/
+= local setup, installation, running commands, common errors
+
+docs/architecture/
+= stable system architecture and design principles
+```
+
+This `backend-architecture.md` file should not be updated for every branch.
+
+Update it only when the system architecture changes, for example:
+
+- adding database/repository layer
+- adding vector database layer
+- adding background workers
+- changing major folder responsibilities
+- changing core architectural flow
+
+---
+
+# 20. Seven-Milestone Architecture Roadmap
+
+RAGForge follows 7 major milestones:
+
+```text
+M1 — Project Bootstrap & Environment
+M2 — FastAPI Backend Foundation
+M3 — File Upload & Document Processing
+M4 — Database & Document Models
+M5 — Data Pipeline Checkpoint
+M6 — RAG Core
+M7 — Production Deployment & Workers
+```
+
+The architecture is designed so each milestone adds one stronger layer without breaking the previous layers.
 
 ---
 
@@ -845,11 +1109,17 @@ A2A agent communication
 RAGForge uses:
 
 ```text
-Production-oriented FastAPI src-layout
+FastAPI src-layout
 Service-based backend architecture
-Project-level documentation
-Root-level configuration
+Project-based document storage
+Centralized settings
+Controlled response signals
+Repository layer for future database access
+Vector database layer for semantic search
+Background workers for heavy processing
 Runtime storage outside source code
 ```
 
-This structure is designed to live longer and support the growth of RAGForge from a simple FastAPI backend into a professional RAG and agentic AI platform.
+This document is the long-term architecture reference for the project.
+
+It should remain stable and should not be rewritten at every branch.
