@@ -22,7 +22,7 @@ The objective is to master the full engineering path from a basic backend servic
 |---|---|---|
 | M1 | 🧱 Project Bootstrap & Environment | Repository, environment, Git workflow, README, and initial structure |
 | M2 | ⚙️ FastAPI Backend Foundation | Running FastAPI app with structured routes, env config, and health check |
-| M3 | 📄 File Upload & Document Processing | Upload endpoint, file validation, project storage, and document ingestion foundation |
+| M3 | 📄 Document Upload & Processing | Upload endpoint, file validation, project storage, and document ingestion foundation |
 | M4 | 🗄️ Database & Document Models | Store projects, documents, metadata, chunks, and processing status |
 | M5 | 🔁 Data Pipeline Checkpoint | Stable extraction, chunking, and ingestion pipeline |
 | M6 | 🔎 RAG Core | Embeddings, vector search, retrieval, and grounded answer generation |
@@ -34,16 +34,19 @@ The objective is to master the full engineering path from a basic backend servic
 
 Current branch details are documented outside the README to keep this file stable.
 
-Current branch reference:
+### Current Branch
 
-[`docs/milestones/milestone-03-document-upload/branches/branch-04-document-upload-endpoint.md`](docs/milestones/milestone-03-document-upload/branches/branch-04-document-upload-endpoint.md)
+[`Branch 8 — Document Processing Endpoint`](docs/milestones/milestone-03-document-upload/branches/branch-08-document-processing-endpoint.md)
 
-Milestone overview:
+Git branch:
 
-[`docs/milestones/milestone-03-document-upload/milestone-03-document-upload.md`](docs/milestones/milestone-03-document-upload/milestone-03-document-upload.md)
+```text
+feature/8-document-processing-endpoint
+```
 
-When a new branch starts, only update this small section if needed.  
-Do not copy branch implementation details into the README.
+### Milestone Overview
+
+[`Milestone 3 — Document Upload & Processing Pipeline`](docs/milestones/milestone-03-document-upload/milestone-03-document-upload.md)
 
 ---
 
@@ -96,10 +99,8 @@ ragforge/
 │   │   └── milestone-03-document-upload/
 │   │       ├── milestone-03-document-upload.md
 │   │       └── branches/
-│   │           ├── branch-01-service-architecture-and-settings.md
-│   │           ├── branch-02-response-signals-and-api-standards.md
-│   │           ├── branch-03-project-based-file-storage.md
-│   │           └── branch-04-document-upload-endpoint.md
+│   │           ├── branch-07-document-upload-endpoint.md
+│   │           └── branch-08-document-processing-endpoint.md
 │   ├── setup/
 │   │   └── local-development.md
 │   └── api/
@@ -107,6 +108,10 @@ ragforge/
 │
 ├── resources/
 ├── storage/
+│   └── uploads/
+│       └── {project_id}/
+│           └── documents/
+│
 ├── tests/
 │
 └── src/
@@ -174,6 +179,15 @@ Milestone → Issue → Branch → Pull Request → Merge
 
 Each branch should focus on one clear responsibility.
 
+Branch numbering is global across the project.
+
+Example:
+
+```text
+Branch 7 → Document Upload Endpoint
+Branch 8 → Document Processing Endpoint
+```
+
 Documentation rule:
 
 ```text
@@ -193,7 +207,8 @@ docs/setup/
 = setup and run instructions
 ```
 
-The README should stay stable.  
+The README should stay stable.
+
 Branch-specific implementation details should be added to the relevant branch `.md` file.
 
 ---
@@ -211,6 +226,7 @@ RAGForge follows these principles:
 - do not commit private `.env` files
 - do not expose internal absolute paths
 - keep each branch focused on one responsibility
+- use one branch identifier everywhere: Git branch, issue, PR, and documentation
 - document implementation details in milestone branch files
 
 ---

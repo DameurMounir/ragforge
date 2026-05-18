@@ -9,6 +9,9 @@ from src.ragforge.core.config import Settings, get_settings
 from src.ragforge.models import ResponseSignal
 from src.ragforge.services.document_service import DocumentService
 
+from src.ragforge.schemas.document_processing import ProcessDocumentRequest
+from src.ragforge.services.document_processing_service import DocumentProcessingService
+
 
 logger = logging.getLogger('uvicorn.error')
 
@@ -93,3 +96,69 @@ async def upload_document(
             'uploaded_at': datetime.now(timezone.utc).isoformat()
         }
     )
+
+@documents_router.post('/process/{project_id}')
+async def process_document(
+    project_id: str,
+    process_request: ProcessDocumentRequest,
+):
+    """
+    Process an uploaded document and split it into chunks.
+    """
+    document_processing_service = DocumentProcessingService()
+
+    try:
+        chunks = document_processing_service.process_document(
+            project_id=project_id,
+            stored_filename=process_request.stored_filename,
+            chunk_size=process_request.chunk_size,
+            overlap_size=process_request.overlap_size,
+        )
+
+    except FileNotFoundError:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                'signal': ResponseSignal.DOCUMENT_NOT_FOUND.value,
+                'message': 'Document not found.',
+            },
+        )
+
+    except ValueError as error:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                'signal': ResponseSignal.DOCUMENT_TYPE_NOT_SUPPORTED.value,
+                'message': str(error),
+            },
+        )
+
+    except Exception as error:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                'signal': ResponseSignal.DOCUMENT_PROCESSING_FAILED.value,
+                'message': str(error),
+            },
+        )
+
+    if not chunks:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                'signal': ResponseSignal.DOCUMENT_EMPTY_CONTENT.value,
+                'message': 'Document content is empty.',
+            },
+        )
+
+    return {
+        'signal': ResponseSignal.DOCUMENT_PROCESSING_SUCCESS.value,
+        'message': 'Document processed successfully.',
+        'project_id': project_id,
+        'stored_filename': process_request.stored_filename,
+        'chunk_size': process_request.chunk_size,
+        'overlap_size': process_request.overlap_size,
+        'chunk_count': len(chunks),
+        'chunks': chunks,
+    }
+    
