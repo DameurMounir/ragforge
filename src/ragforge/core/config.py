@@ -9,7 +9,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 # This class represents the global application configuration.
-# Each attribute here must exist in the .env file unless we give it a default value.
+# Each attribute here can be loaded from the .env file.
+# If an attribute has a default value, the app can run even if it is missing from .env.
 class Settings(BaseSettings):
     # Application name.
     # Example in .env:
@@ -27,25 +28,32 @@ class Settings(BaseSettings):
     APP_ENV: str
 
     # Maximum accepted upload file size in megabytes.
-    # Example in .env:
-    # FILE_MAX_SIZE_MB=10
-    FILE_MAX_SIZE_MB: int
+    # Default value: 10 MB.
+    FILE_MAX_SIZE_MB: int = 20
+
+    # Default chunk size used when reading or saving uploaded files.
+    # 1024 * 1024 = 1 MB per chunk.
+    FILE_DEFAULT_CHUNK_SIZE: int = 1024 * 1024
 
     # Allowed file extensions.
     # This checks the filename extension, such as pdf, txt, or docx.
-    # Example in .env:
-    # FILE_ALLOWED_EXTENSIONS=["pdf", "txt", "docx"]
-    FILE_ALLOWED_EXTENSIONS: list[str]
+    FILE_ALLOWED_EXTENSIONS: list[str] = ['pdf', 'txt', 'docx']
 
     # Allowed MIME types.
     # This checks the file content type sent by the client/browser.
-    # Example in .env:
-    # FILE_ALLOWED_MIME_TYPES=["application/pdf", "text/plain"]
-    FILE_ALLOWED_MIME_TYPES: list[str]
+    FILE_ALLOWED_MIME_TYPES: list[str] = [
+        'application/pdf',
+        'text/plain',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ]
 
-    # Storage settings // added at milestone 3 branche 6
+    # Root upload directory.
+    # All uploaded files will be stored inside this folder.
     UPLOAD_DIR: str = 'storage/uploads'
+
+    # Subdirectory used inside each project folder to store documents.
     PROJECT_DOCUMENTS_DIR: str = 'documents'
+
     # Pydantic v2 configuration.
     # This tells Pydantic to read values from the .env file.
     model_config = SettingsConfigDict(
@@ -66,4 +74,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     # Create and return one Settings instance loaded from .env.
-    return Settings()
+    return Settings()   
