@@ -21,3 +21,10 @@ class ResponseSignal(str, Enum):
 
     # Generic error signal.
     INTERNAL_SERVER_ERROR = 'internal_server_error'
+
+    DOCUMENT_NOT_FOUND = 'document_not_found'
+    DOCUMENT_PROCESSING_SUCCESS = 'document_processing_success'
+    DOCUMENT_PROCESSING_FAILED = 'document_processing_failed'
+    DOCUMENT_TYPE_NOT_SUPPORTED = 'document_type_not_supported'
+    DOCUMENT_EMPTY_CONTENT = 'document_empty_content'
+    
