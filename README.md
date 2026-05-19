@@ -47,7 +47,7 @@ infra/9-docker-mongodb-motor
 
 ### Milestone Overview
 
-[`Milestone 4 — Database & Document Models`](docs/milestones/milestone-04-database-metadata/milestone-04-database-metadata.md)
+[`Milestone 4 — Database & Document Models`](docs/milestones/milestone-04-database-document-models/milestone-04-database-document-models.md)
 
 ---
 
