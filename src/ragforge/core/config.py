@@ -46,7 +46,10 @@ class Settings(BaseSettings):
         'text/plain',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ]
-
+    
+    MONGODB_URL: str
+    MONGODB_DATABASE: str
+    
     # Root upload directory.
     # All uploaded files will be stored inside this folder.
     UPLOAD_DIR: str = 'storage/uploads'
