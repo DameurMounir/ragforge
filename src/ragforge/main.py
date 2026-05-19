@@ -1,9 +1,34 @@
 from fastapi import FastAPI 
+from src.ragforge.core.config import get_settings
 from src.ragforge.routes.base import base_router
 from src.ragforge.routes.health import health_router
 from src.ragforge.routes.documents import documents_router
+from src.ragforge.stores.mongodb.client import MongoDBClient
 
 app = FastAPI()
+
+@app.on_event('startup')
+async def startup_db_client():
+    settings = get_settings()
+
+    mongodb_client = MongoDBClient(settings=settings)
+    await mongodb_client.connect()
+
+    app.mongodb_client = mongodb_client
+    app.db_client = mongodb_client.database
+
+
+@app.on_event('shutdown')
+async def shutdown_db_client():
+    await app.mongodb_client.close()
+
+
+
+Client(settings.MONGODB_URL)
+n[settings.MONGODB_DATABASE]
+
+
+
 
 
 app.include_router(base_router)
