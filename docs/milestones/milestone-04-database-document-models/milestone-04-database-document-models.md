@@ -23,27 +23,6 @@ At the end of this milestone, MongoDB should run locally, the API should connect
 
 ---
 
-## Alignment With The Core 7-Milestone Document
-
-Milestone 4 is aligned with teacher videos 9 to 11.
-
-| Video | Teacher topic | mini-rag branch | RAGForge branch | Issue | PR title |
-|---|---|---|---|---|---|
-| 9 | Docker - MongoDB - Motor | `tut-006` | `infra/9-docker-mongodb-motor` | `#9 Add MongoDB with Docker and Motor` | `Add MongoDB Docker and Motor client` |
-| 10 | Mongo Schemes and Models | `tut-007` | `feature/10-mongo-schemas-models` | `#10 Create MongoDB schemas and document models` | `Add MongoDB schemas and models` |
-| 11 | Mongo Indexing | `tut-008` | `feature/11-mongo-indexing` | `#11 Add MongoDB indexes` | `Add MongoDB indexing` |
-
-Milestone 4 is complete only when:
-
-```text
-MongoDB runs in Docker
-API connects to MongoDB
-metadata is persisted
-indexes are created
-```
-
----
-
 ## Why This Milestone Matters
 
 A production RAG backend cannot rely only on files and temporary API responses.
