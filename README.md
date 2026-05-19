@@ -30,23 +30,24 @@ The objective is to master the full engineering path from a basic backend servic
 
 ---
 
+
 ## 🚦 Current Development Focus
 
 Current branch details are documented outside the README to keep this file stable.
 
 ### Current Branch
 
-[`Branch 8 — Document Processing Endpoint`](docs/milestones/milestone-03-document-upload/branches/branch-08-document-processing-endpoint.md)
+[`Branch 9 — Docker MongoDB Motor Infrastructure`](docs/milestones/milestone-04-database-document-models/branches/branch-09-docker-mongodb-motor.md)
 
 Git branch:
 
 ```text
-feature/8-document-processing-endpoint
+infra/9-docker-mongodb-motor
 ```
 
 ### Milestone Overview
 
-[`Milestone 3 — Document Upload & Processing Pipeline`](docs/milestones/milestone-03-document-upload/milestone-03-document-upload.md)
+[`Milestone 4 — Database & Document Models`](docs/milestones/milestone-04-database-metadata/milestone-04-database-metadata.md)
 
 ---
 
