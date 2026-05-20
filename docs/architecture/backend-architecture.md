@@ -2,7 +2,7 @@
 
 This document defines the **stable backend architecture** of RAGForge.
 
-It is intentionally written as a long-term architecture reference for the whole project. It should **not be updated at every branch**. It should only change when the real system architecture changes in a major way, for example when adding a database layer, vector database layer, background worker layer, or deployment architecture.
+It is intentionally written as a long-term architecture reference for the whole project. It should **not be updated at every branch**. It should only change when the real system architecture changes in a major way, for example when adding a database layer, metadata indexing layer, vector database layer, background worker layer, or deployment architecture.
 
 ---
 
@@ -12,10 +12,12 @@ RAGForge is a production-oriented **Retrieval-Augmented Generation (RAG)** backe
 
 Its purpose is to provide a clean, modular, and scalable backend foundation for:
 
+- asset ingestion
 - document upload
 - project-based storage
 - file validation
 - metadata management
+- metadata indexing
 - text extraction
 - chunking
 - embeddings
@@ -25,7 +27,48 @@ Its purpose is to provide a clean, modular, and scalable backend foundation for:
 - background processing
 - production deployment
 
-RAGForge may later be used as a **tool or backend service inside agent systems**, but the core architecture of this project remains focused on building a strong RAG platform first.
+RAGForge may later be used as a **tool or backend service inside agent systems**, but the core architecture of this project remains focused on building a strong knowledge-oriented RAG platform first.
+
+---
+
+## 🧠 Knowledge-Oriented RAG Direction
+
+RAGForge is built with the understanding that **RAG is not dead**.
+
+What is becoming insufficient is **naive RAG**: systems that only split files into chunks, retrieve a few similar passages, and pass them directly to an LLM without strong metadata, structure, provenance, indexing, lifecycle tracking, or workflow control.
+
+RAGForge follows a more modern **knowledge-oriented RAG architecture**.
+
+The goal is to evolve from simple document retrieval toward a production-grade knowledge backend where:
+
+- every source is tracked as an asset
+- every asset belongs to a project
+- every extracted chunk is linked to its source asset
+- metadata is persisted in a database
+- metadata indexes support efficient querying
+- chunks can later be embedded and searched semantically
+- answers can be grounded, cited, and traceable
+- the backend can later support agent-ready knowledge access
+
+The long-term knowledge flow is:
+
+```text
+Project
+  ↓
+Asset
+  ↓
+DataChunk
+  ↓
+Metadata Indexing
+  ↓
+Embedding / Vector Indexing
+  ↓
+Semantic Search
+  ↓
+Grounded / Augmented Answer
+```
+
+This makes RAGForge more than a basic RAG demo. It is designed as a foundation for structured knowledge systems that can later support applications, websites, internal tools, and agentic AI workflows.
 
 ---
 
@@ -46,7 +89,7 @@ FastAPI Route
     ↓
 Service Layer
     ↓
-Storage / Database / Vector Database / LLM
+Storage / Database Stores / Vector Database / LLM
     ↓
 API Response
 ```
@@ -55,7 +98,21 @@ Each layer has a clear responsibility.
 
 Routes should remain thin.  
 Services contain business logic.  
-Infrastructure layers handle persistence, storage, vector search, model providers, and background execution.
+Infrastructure layers handle persistence, storage, metadata stores, vector search, model providers, and background execution.
+
+The intended database flow is:
+
+```text
+routes
+  ↓
+services
+  ↓
+stores
+  ↓
+db_schemes
+  ↓
+MongoDB
+```
 
 ---
 
@@ -68,9 +125,11 @@ FastAPI API Layer
         ↓
 Service Layer
         ↓
-Document Storage
+Asset Storage
         ↓
 Metadata Database
+        ↓
+Metadata Indexing
         ↓
 Text Extraction
         ↓
@@ -107,7 +166,8 @@ ragforge/
 │
 ├── docs/
 │   ├── milestones/
-│   │   └── milestone-03-document-upload.md
+│   │   ├── milestone-03-document-upload/
+│   │   └── milestone-04-database-metadata-indexing/
 │   ├── architecture/
 │   │   └── backend-architecture.md
 │   ├── setup/
@@ -116,15 +176,9 @@ ragforge/
 │       └── endpoints.md
 │
 ├── resources/
-│   ├── .gitkeep
-│   └── ragforge.postman_collection.json
-│
 ├── storage/
 │   └── uploads/
-│       └── .gitkeep
-│
 ├── tests/
-│   └── __init__.py
 │
 └── src/
     └── ragforge/
@@ -153,16 +207,30 @@ ragforge/
         │   ├── retrieval_service.py
         │   └── rag_service.py
         │
+        ├── stores/
+        │   ├── __init__.py
+        │   └── mongodb/
+        │       ├── __init__.py
+        │       ├── base_store.py
+        │       ├── collections.py
+        │       ├── project_store.py
+        │       ├── asset_store.py
+        │       └── chunk_store.py
+        │
         ├── models/
         │   ├── __init__.py
+        │   ├── db_schemes/
+        │   │   ├── __init__.py
+        │   │   ├── project.py
+        │   │   ├── asset.py
+        │   │   └── data_chunk.py
         │   └── enums/
         │       ├── __init__.py
-        │       └── response_signals.py
+        │       ├── response_signals.py
+        │       ├── asset_type.py
+        │       └── asset_status.py
         │
         ├── schemas/
-        │   └── __init__.py
-        │
-        ├── repositories/
         │   └── __init__.py
         │
         ├── workers/
@@ -236,7 +304,7 @@ The real `.env` file must never be committed to GitHub.
 
 ## Why `storage/` stays at the root
 
-Uploaded files and runtime documents are data, not source code.
+Uploaded files and runtime assets are data, not source code.
 
 Correct:
 
@@ -271,15 +339,15 @@ main.py
 core/
 routes/
 services/
+stores/
 models/
 schemas/
-repositories/
 workers/
 utils/
 exceptions/
 ```
 
-This structure supports clean growth from a small FastAPI backend into a full RAG backend.
+This structure supports clean growth from a small FastAPI backend into a full knowledge-oriented RAG backend.
 
 ---
 
@@ -298,6 +366,7 @@ Responsibilities:
 - include routers
 - define global app metadata
 - prepare the API entry point
+- initialize infrastructure connections when needed
 
 Example concept:
 
@@ -312,12 +381,10 @@ from src.ragforge.routes.documents import documents_router
 
 settings = get_settings()
 
-
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION
 )
-
 
 app.include_router(base_router)
 app.include_router(health_router)
@@ -350,7 +417,7 @@ Their responsibility is to:
 
 Routes should remain thin.
 
-They should not contain heavy validation, storage logic, extraction logic, chunking logic, embedding logic, or retrieval logic.
+They should not contain heavy validation, storage logic, extraction logic, chunking logic, embedding logic, retrieval logic, or database query logic.
 
 ---
 
@@ -363,6 +430,7 @@ routes/base.py
 routes/health.py
 routes/documents.py
 routes/projects.py
+routes/assets.py
 routes/search.py
 routes/rag.py
 routes/jobs.py
@@ -374,8 +442,9 @@ Example endpoint groups:
 GET  /api/v1/
 GET  /api/v1/health/
 POST /api/v1/documents/upload/{project_id}
+GET  /api/v1/assets/{asset_id}
+GET  /api/v1/projects/{project_id}/assets
 POST /api/v1/projects/{project_id}/ask
-GET  /api/v1/documents/{document_id}
 GET  /api/v1/jobs/{job_id}
 ```
 
@@ -440,7 +509,7 @@ storage/uploads/{project_id}/documents/
 Important:
 
 ```text
-ProjectService does not create a new project folder for every document.
+ProjectService does not create a new project folder for every file.
 It creates or reuses one folder per project.
 ```
 
@@ -455,7 +524,7 @@ Responsibilities:
 - validate uploaded file MIME type
 - validate uploaded file size
 - clean original filenames
-- generate document IDs
+- generate file IDs or asset-related identifiers
 - generate stored filenames
 - prepare final storage paths
 - coordinate with `ProjectService`
@@ -471,6 +540,7 @@ Responsibilities:
 - extract text from PDF
 - extract text from TXT
 - extract text from DOCX
+- extract text from web pages or other asset sources later
 - normalize extracted content
 - prepare extracted content for chunking
 
@@ -482,10 +552,10 @@ Future service responsible for splitting text.
 
 Responsibilities:
 
-- split long documents into chunks
+- split long extracted content into chunks
 - preserve chunk order
-- attach document metadata
-- prepare chunks for embeddings
+- attach project and asset metadata
+- prepare chunks for persistence and embeddings
 
 ---
 
@@ -533,7 +603,7 @@ Responsibilities:
 - receive user query
 - generate query embedding
 - search vector database
-- filter by project or document
+- filter by project, asset, or metadata
 - return relevant chunks
 
 ---
@@ -601,6 +671,9 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = 'storage/uploads'
     PROJECT_DOCUMENTS_DIR: str = 'documents'
 
+    MONGODB_URL: str = 'mongodb://localhost:27017'
+    MONGODB_DATABASE: str = 'ragforge'
+
     model_config = SettingsConfigDict(
         env_file='.env',
         env_file_encoding='utf-8',
@@ -633,16 +706,92 @@ Benefits:
 src/ragforge/models/
 ```
 
-The `models/` folder contains application-level models and enums.
+The `models/` folder contains application-level models, database schemes, and enums.
 
-Current example:
+Current and future structure:
 
 ```text
 models/
 ├── __init__.py
+├── db_schemes/
+│   ├── __init__.py
+│   ├── project.py
+│   ├── asset.py
+│   └── data_chunk.py
 └── enums/
     ├── __init__.py
-    └── response_signals.py
+    ├── response_signals.py
+    ├── asset_type.py
+    └── asset_status.py
+```
+
+---
+
+## Database Schemes
+
+Database schemes define the shape of MongoDB records.
+
+The core database relationship is:
+
+```text
+Project → Asset → DataChunk
+```
+
+Expected database schemes:
+
+```text
+Project
+Asset
+DataChunk
+```
+
+Responsibilities:
+
+- define database record fields
+- validate database-level data shapes
+- keep MongoDB document structure explicit
+- prepare clean serialization and deserialization
+
+Database schemes should not contain route logic or workflow logic.
+
+---
+
+## Enums
+
+Enums keep internal states and response values stable.
+
+Examples:
+
+```text
+ResponseSignal
+AssetType
+AssetStatus
+```
+
+`AssetType` allows the architecture to support multiple knowledge sources over time.
+
+Examples:
+
+```text
+file
+url
+image
+video
+audio
+web_page
+```
+
+`AssetStatus` tracks processing lifecycle.
+
+Examples:
+
+```text
+uploaded
+registered
+processing
+processed
+failed
+indexed
 ```
 
 ---
@@ -689,14 +838,14 @@ Response signals help with:
 src/ragforge/schemas/
 ```
 
-Schemas define request and response structures using Pydantic.
+Schemas define API request and response structures using Pydantic.
 
 Future examples:
 
 ```text
 DocumentUploadResponse
-DocumentMetadataResponse
-DocumentListResponse
+AssetMetadataResponse
+AssetListResponse
 ProjectCreateRequest
 ProjectResponse
 RAGAnswerRequest
@@ -713,68 +862,79 @@ Schemas help:
 - improve OpenAPI documentation
 - keep routes clean
 
+Important distinction:
+
+```text
+models/db_schemes = database record shapes
+schemas           = API request/response shapes
+```
+
 ---
 
-# 9. Repositories Layer
+# 9. Stores Layer
 
 ## Folder
 
 ```text
-src/ragforge/repositories/
+src/ragforge/stores/
 ```
 
-This folder can be introduced when the database layer appears.
+Stores handle database and infrastructure access.
 
-Repositories handle database access.
-
-They should not contain business logic.
-
-Responsibilities:
-
-- create database records
-- read database records
-- update database records
-- delete database records
-- isolate SQL/database code from services
-
-Example future files:
+MongoDB stores live in:
 
 ```text
-project_repository.py
-document_repository.py
-chunk_repository.py
-job_repository.py
+src/ragforge/stores/mongodb/
 ```
+
+Expected MongoDB stores:
+
+```text
+BaseMongoStore
+ProjectStore
+AssetStore
+ChunkStore
+```
+
+Stores should not contain business workflow logic.
+
+They are responsible for:
+
+- creating database records
+- reading database records
+- updating database records
+- deleting database records
+- isolating MongoDB code from services
 
 Future flow:
 
 ```text
-Service → Repository → Database
+Service → Store → MongoDB
 ```
 
 ---
 
-# 10. Database Layer
+# 10. Database Metadata Layer
 
 The database becomes the source of truth for structured metadata.
 
-Future database responsibilities:
+Database responsibilities:
 
 - store projects
-- store documents
+- store assets
 - store chunks
 - store processing status
 - store upload metadata
 - store extraction status
 - store embedding status
-- store retrieval logs
+- store retrieval-related metadata later
 
-Conceptual tables:
+Conceptual collections:
 
 ```text
 projects
-documents
-chunks
+assets
+data_chunks
 processing_jobs
 ```
 
@@ -784,7 +944,39 @@ The database stores structured metadata.
 
 ---
 
-# 11. Storage Layer
+# 11. Metadata Indexing Layer
+
+Metadata indexes prepare MongoDB for efficient queries.
+
+Metadata indexing is different from vector indexing.
+
+Metadata indexes help answer questions such as:
+
+```text
+Which assets belong to this project?
+Which chunks belong to this asset?
+Which assets are still processing?
+Which asset has this name inside this project?
+Which chunks are already embedded?
+```
+
+Expected metadata indexes include:
+
+```text
+project_id unique index
+asset_project_id index
+asset project/name index
+asset status index
+chunk_project_id index
+chunk_asset_id index
+chunk order index
+```
+
+This layer prepares RAGForge for larger datasets before semantic retrieval is introduced.
+
+---
+
+# 12. Storage Layer
 
 ## Folder
 
@@ -828,7 +1020,7 @@ storage/uploads/*
 
 ---
 
-# 12. Vector Database Layer
+# 13. Vector Database Layer
 
 The vector database stores embeddings for semantic search.
 
@@ -845,7 +1037,7 @@ Vector database responsibilities:
 - store chunk embeddings
 - store vector payload metadata
 - search by query embedding
-- filter results by project, document, or metadata
+- filter results by project, asset, or metadata
 - return relevant chunks
 
 Conceptual flow:
@@ -864,7 +1056,7 @@ Return Relevant Chunks
 
 ---
 
-# 13. Background Workers Layer
+# 14. Background Workers Layer
 
 Background workers are used when processing becomes slow.
 
@@ -880,19 +1072,19 @@ RQ
 Future responsibilities:
 
 - extract text
-- chunk documents
+- chunk assets
 - generate embeddings
 - index vectors
-- update document status
+- update asset status
 - retry failed jobs
 - run cleanup tasks
 
 Future flow:
 
 ```text
-Upload File
+Upload / Register Asset
     ↓
-Return document_id immediately
+Return asset_id immediately
     ↓
 Create processing job
     ↓
@@ -900,23 +1092,27 @@ Worker extracts text
     ↓
 Worker chunks text
     ↓
+Worker persists chunks
+    ↓
 Worker generates embeddings
     ↓
 Worker indexes vectors
     ↓
-Document status becomes ready
+Asset status becomes ready
 ```
 
 ---
 
-# 14. RAG Pipeline
+# 15. RAG Pipeline
 
 The central RAG pipeline is:
 
 ```text
-Upload Document
+Upload / Register Asset
     ↓
-Store Original File
+Store Original Source
+    ↓
+Create Asset Metadata
     ↓
 Extract Text
     ↓
@@ -924,7 +1120,7 @@ Clean Text
     ↓
 Split Into Chunks
     ↓
-Store Metadata
+Store Chunk Metadata
     ↓
 Generate Embeddings
     ↓
@@ -939,14 +1135,14 @@ This pipeline is the core of RAGForge.
 
 ---
 
-# 15. RAG Answer Generation
+# 16. RAG Answer Generation
 
 Future answer endpoints may include:
 
 ```http
 POST /api/v1/projects/{project_id}/ask
-POST /api/v1/documents/{document_id}/summary
-POST /api/v1/documents/{document_id}/quiz
+POST /api/v1/assets/{asset_id}/summary
+POST /api/v1/assets/{asset_id}/quiz
 ```
 
 Answer generation flow:
@@ -967,9 +1163,9 @@ Return Grounded Answer + Sources
 
 ---
 
-# 16. Relation to Agent Systems
+# 17. Relation to Agent Systems
 
-RAGForge is focused first on RAG.
+RAGForge is focused first on building a reliable knowledge backend.
 
 Later, an agent system can call RAGForge as a tool.
 
@@ -989,11 +1185,11 @@ This means RAGForge can become a reliable knowledge backend for agents.
 
 However, the current architecture does not depend on agent protocols or multi-agent communication.
 
-The priority is to build a strong RAG backend first.
+The priority is to build a strong knowledge-oriented RAG backend first.
 
 ---
 
-# 17. Security Principles
+# 18. Security Principles
 
 RAGForge should follow these security principles from the beginning.
 
@@ -1007,6 +1203,7 @@ Do not blindly trust:
 - uploaded file sizes
 - project IDs
 - user input
+- external URLs
 - external data
 
 ## Do Not Expose
@@ -1022,7 +1219,7 @@ Do not expose:
 
 ---
 
-# 18. Testing Layer
+# 19. Testing Layer
 
 ## Folder
 
@@ -1042,6 +1239,7 @@ test_project_storage.py
 test_file_validation.py
 test_extraction.py
 test_chunking.py
+test_metadata_stores.py
 test_retrieval.py
 ```
 
@@ -1053,7 +1251,7 @@ pytest -v
 
 ---
 
-# 19. Documentation Strategy
+# 20. Documentation Strategy
 
 RAGForge documentation should be split by responsibility.
 
@@ -1078,7 +1276,8 @@ This `backend-architecture.md` file should not be updated for every branch.
 
 Update it only when the system architecture changes, for example:
 
-- adding database/repository layer
+- adding database/store layer
+- adding metadata indexing layer
 - adding vector database layer
 - adding background workers
 - changing major folder responsibilities
@@ -1086,7 +1285,7 @@ Update it only when the system architecture changes, for example:
 
 ---
 
-# 20. Seven-Milestone Architecture Roadmap
+# 21. Seven-Milestone Architecture Roadmap
 
 RAGForge follows 7 major milestones:
 
@@ -1094,7 +1293,7 @@ RAGForge follows 7 major milestones:
 M1 — Project Bootstrap & Environment
 M2 — FastAPI Backend Foundation
 M3 — File Upload & Document Processing
-M4 — Database & Document Models
+M4 — Database Metadata & Indexing
 M5 — Data Pipeline Checkpoint
 M6 — RAG Core
 M7 — Production Deployment & Workers
@@ -1111,14 +1310,18 @@ RAGForge uses:
 ```text
 FastAPI src-layout
 Service-based backend architecture
-Project-based document storage
+Project-based asset storage
 Centralized settings
 Controlled response signals
-Repository layer for future database access
+Database schemes for structured metadata
+MongoDB stores for persistence
+Metadata indexes for efficient database queries
 Vector database layer for semantic search
 Background workers for heavy processing
 Runtime storage outside source code
 ```
+
+RAGForge is built on the principle that RAG is not dead. The future direction is knowledge-oriented RAG: structured assets, metadata, chunks, indexes, semantic retrieval, citations, and grounded augmented answers.
 
 This document is the long-term architecture reference for the project.
 

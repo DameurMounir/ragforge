@@ -16,6 +16,36 @@ The objective is to master the full engineering path from a basic backend servic
 
 ---
 
+## 🧠 Knowledge-Oriented RAG Direction
+
+RAGForge is built with the understanding that **RAG is not dead**.
+
+What is becoming obsolete is **naive RAG**: systems that only split documents into chunks, retrieve a few similar passages, and pass them directly to an LLM without strong metadata, structure, provenance, indexing, or workflow control.
+
+RAGForge follows a more modern **knowledge-oriented RAG direction**.
+
+The goal is to evolve from simple document retrieval toward a production-grade knowledge backend where every source is tracked as an asset, every extracted chunk is linked to its origin, metadata is persisted, indexes are prepared, and future retrieval can support grounded answers, citations, semantic search, and agent-ready knowledge access.
+
+The architectural direction is:
+
+```text
+Project
+  ↓
+Asset
+  ↓
+DataChunk
+  ↓
+Metadata Indexing
+  ↓
+Semantic Search
+  ↓
+Grounded / Augmented Answer
+```
+
+This makes RAGForge more than a basic RAG demo. It is designed as a foundation for structured knowledge systems that can later support applications, websites, internal tools, and agentic AI workflows.
+
+---
+
 ## 🧭 7-Milestone Roadmap
 
 | Milestone | Focus | Expected Result |
@@ -23,13 +53,12 @@ The objective is to master the full engineering path from a basic backend servic
 | M1 | 🧱 Project Bootstrap & Environment | Repository, environment, Git workflow, README, and initial structure |
 | M2 | ⚙️ FastAPI Backend Foundation | Running FastAPI app with structured routes, env config, and health check |
 | M3 | 📄 Document Upload & Processing | Upload endpoint, file validation, project storage, and document ingestion foundation |
-| M4 | 🗄️ Database & Document Models | Store projects, documents, metadata, chunks, and processing status |
+| M4 | 🗄️ Database Metadata & Indexing | MongoDB metadata layer, asset schemes, stores, metadata indexes, and persistence foundation |
 | M5 | 🔁 Data Pipeline Checkpoint | Stable extraction, chunking, and ingestion pipeline |
 | M6 | 🔎 RAG Core | Embeddings, vector search, retrieval, and grounded answer generation |
 | M7 | 🐳 Production Deployment & Workers | Docker, PostgreSQL, Qdrant/PgVector, Redis, workers, monitoring, and deployment |
 
 ---
-
 
 ## 🚦 Current Development Focus
 
@@ -37,17 +66,17 @@ Current branch details are documented outside the README to keep this file stabl
 
 ### Current Branch
 
-[`Branch 9 — Docker MongoDB Motor Infrastructure`](docs/milestones/milestone-04-database-document-models/branches/branch-09-docker-mongodb-motor.md)
+[`Branch 10 — Asset Metadata Schemes & Stores`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-10-asset-metadata-store.md)
 
 Git branch:
 
 ```text
-infra/9-docker-mongodb-motor
+feature/10-asset-metadata-store
 ```
 
 ### Milestone Overview
 
-[`Milestone 4 — Database & Document Models`](docs/milestones/milestone-04-database-document-models/milestone-04-database-document-models.md)
+[`Milestone 4 — Database Metadata & Indexing`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md)
 
 ---
 
@@ -97,11 +126,13 @@ ragforge/
 │   ├── architecture/
 │   │   └── backend-architecture.md
 │   ├── milestones/
-│   │   └── milestone-03-document-upload/
-│   │       ├── milestone-03-document-upload.md
+│   │   ├── milestone-03-document-upload/
+│   │   │   ├── milestone-03-document-upload.md
+│   │   │   └── branches/
+│   │   └── milestone-04-database-metadata-indexing/
+│   │       ├── milestone-04-database-metadata-indexing.md
 │   │       └── branches/
-│   │           ├── branch-07-document-upload-endpoint.md
-│   │           └── branch-08-document-processing-endpoint.md
+│   │           └── branch-10-asset-metadata-store.md
 │   ├── setup/
 │   │   └── local-development.md
 │   └── api/
@@ -122,6 +153,10 @@ ragforge/
         ├── routes/
         ├── services/
         ├── models/
+        │   ├── enums/
+        │   └── db_schemes/
+        ├── stores/
+        │   └── mongodb/
         ├── schemas/
         ├── utils/
         └── exceptions/
@@ -185,8 +220,8 @@ Branch numbering is global across the project.
 Example:
 
 ```text
-Branch 7 → Document Upload Endpoint
-Branch 8 → Document Processing Endpoint
+Branch 9  → Docker MongoDB Motor Infrastructure
+Branch 10 → Asset Metadata Schemes & Stores
 ```
 
 Documentation rule:
@@ -229,6 +264,8 @@ RAGForge follows these principles:
 - keep each branch focused on one responsibility
 - use one branch identifier everywhere: Git branch, issue, PR, and documentation
 - document implementation details in milestone branch files
+- treat metadata as a first-class part of modern RAG architecture
+- link every chunk to its source asset for traceability and future citations
 
 ---
 
@@ -239,4 +276,3 @@ RAGForge follows these principles:
 AI engineer and system builder focused on production-grade RAG, agentic AI systems, vector databases, observability, and deployable AI architectures.
 
 My objective is to build practical, robust, and scalable AI systems that can evolve from learning projects into real products, client solutions, and future agentic platforms.
-    
