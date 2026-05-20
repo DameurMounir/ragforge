@@ -413,6 +413,17 @@ This branch is complete when:
 
 ---
 
+Manual MongoDB validation was also performed using a temporary local script.
+
+The validation confirmed that the store layer can create and read the following chain:
+
+```text
+Project
+  ↓
+Asset
+  ↓
+DataChunk
+
 ## 🔜 Next Branch
 
 The next branch is:
@@ -428,4 +439,3 @@ Add  MongoDB index definitions and index initialization for projects, assets, an
 ```
 
 Branch 11 will prepare the metadata layer for efficient querying before upload and processing endpoints start writing metadata records.
-
