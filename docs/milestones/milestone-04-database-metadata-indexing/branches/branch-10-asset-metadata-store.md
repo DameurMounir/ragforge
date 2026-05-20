@@ -424,7 +424,8 @@ Branch 11 — MongoDB Metadata Indexes
 Expected next work:
 
 ```text
-Add MongoDB index definitions and index initialization for projects, assets, and chunks.
+Add  MongoDB index definitions and index initialization for projects, assets, and chunks.
 ```
 
 Branch 11 will prepare the metadata layer for efficient querying before upload and processing endpoints start writing metadata records.
+
