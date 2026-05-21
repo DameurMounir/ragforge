@@ -1,4 +1,7 @@
-from bson.objectid import ObjectId
+from datetime import datetime, timezone
+from bson import ObjectId
+
+from src.ragforge.models.enums.asset_status import AssetStatus
 
 from src.ragforge.models.db_schemes import Asset
 from src.ragforge.stores.mongodb.base_store import BaseMongoStore
@@ -91,6 +94,65 @@ class AssetStore(BaseMongoStore):
         return Asset(**record)
 
     
+    async def get_uploaded_assets_by_project_id(
+        self,
+        asset_project_id: str | ObjectId,
+    ) -> list[Asset]:
+        """
+        Return all uploaded assets belonging to a project.
+
+        Branch 12 uses this method to find assets that still need processing.
+        """
+        object_id = (
+            ObjectId(asset_project_id)
+            if isinstance(asset_project_id, str)
+            else asset_project_id
+        )
+
+        records = await self.collection.find({
+            'asset_project_id': object_id,
+            'asset_status': AssetStatus.UPLOADED.value,
+        }).to_list(length=None)
+
+        return [
+            Asset(**record)
+            for record in records
+        ]
+    
+    async def update_asset_processing_result(
+        self,
+        asset_id: str | ObjectId,
+        asset_status: str,
+        chunk_count: int = 0,
+        extraction_method: str | None = None,
+        extraction_error: str | None = None,
+    ) -> bool:
+        """
+        Update asset processing result after document processing.
+
+        Branch 12 uses this method to mark assets as processed or failed.
+        """
+        object_id = (
+            ObjectId(asset_id)
+            if isinstance(asset_id, str)
+            else asset_id
+        )
+
+        result = await self.collection.update_one(
+            {'_id': object_id},
+            {
+                '$set': {
+                    'asset_status': asset_status,
+                    'chunk_count': chunk_count,
+                    'extraction_method': extraction_method,
+                    'extraction_error': extraction_error,
+                    'updated_at': datetime.now(timezone.utc),
+                }
+            },
+        )
+
+        return result.modified_count > 0
+
     
     @classmethod
     async def create_instance(cls, db_client: object):

@@ -1,10 +1,10 @@
-# Milestone 4 — Database Metadata & Indexing
+# Milestone 4 — Database Metadata & Indexing & Auth
 
 ## 🎯 Objective
 
-Milestone 4 introduces the first database-backed metadata and indexing layer for RAGForge.
+Milestone 4 introduces the first database-backed metadata, indexing, and authenticated MongoDB layer for RAGForge.
 
-After building the document upload and processing foundation in Milestone 3, this milestone adds MongoDB infrastructure, metadata schemes, MongoDB store classes, and metadata indexes required to track projects, assets, and extracted chunks.
+After building the document upload and processing foundation in Milestone 3, this milestone adds MongoDB infrastructure, metadata schemes, MongoDB store classes, metadata indexes, MongoDB authentication, and metadata persistence validation for projects, assets, and extracted chunks.
 
 The goal is to move RAGForge from a file-based ingestion pipeline toward a metadata-driven RAG backend ready for persistence, indexing, semantic search, and augmented generation.
 
@@ -14,7 +14,9 @@ The goal is to move RAGForge from a file-based ingestion pipeline toward a metad
 
 A production RAG system cannot rely only on files saved on disk.
 
+
 It needs a metadata layer capable of tracking:
+
 
 - projects
 - uploaded assets
@@ -26,8 +28,9 @@ It needs a metadata layer capable of tracking:
 - metadata indexing
 - future semantic search readiness
 
-This milestone prepares RAGForge for later stages such as chunk persistence, embeddings, vector search, semantic retrieval, citations, and augmented answer generation.
 
+This milestone prepares RAGForge for later stages such as chunk persistence, embeddings, vector search, 
+semantic retrieval, citations, and augmented answer generation.
 ---
 
 ## 🧱 Architecture Direction
@@ -48,28 +51,9 @@ An asset represents a knowledge source attached to a project.
 
 A data chunk represents a text unit extracted from an asset.
 
-This structure keeps RAGForge flexible because an asset can represent more than a local document file.
-
-Examples of future asset types include:
-
-```text
-PDF file
-TXT file
-DOCX file
-URL
-web page
-image
-video
-audio
-transcript
-API source
-```
-
 ---
 
 ## 🧩 Production Design Principles
-
-Milestone 4 follows these principles:
 
 ```text
 1. Keep database schemes separate from API routes.
@@ -79,7 +63,8 @@ Milestone 4 follows these principles:
 5. Track assets before creating chunks.
 6. Link every chunk to both project and asset.
 7. Add metadata indexes before relying on large-scale queries.
-8. Prepare metadata for future semantic search and augmented answers.
+8. Use authenticated database access for realistic local development.
+9. Prepare metadata for future semantic search and augmented answers.
 ```
 
 The intended flow is:
@@ -103,17 +88,15 @@ MongoDB
 | Branch | Name | Purpose | Status |
 |---|---|---|---|
 | 9 | Docker MongoDB Motor Infrastructure | Add MongoDB service, configuration, dependencies, and async connection foundation | Done |
-| 10 | Asset Metadata Schemes & Stores | Add database schemes and MongoDB store classes for projects, assets, and chunks | In Progress |
-| 11 | MongoDB Metadata Indexes | Add MongoDB index definitions and initialization for projects, assets, and chunks | Planned |
-| 12 | Upload and Processing Metadata Persistence | Connect upload and processing endpoints to MongoDB metadata persistence | Planned |
+| 10 | Asset Metadata Schemes & Stores | Add database schemes and MongoDB store classes for projects, assets, and chunks | Done |
+| 11 | MongoDB Metadata Indexes & Auth | Add MongoDB index definitions, initialization logic, and authenticated MongoDB access | Done |
+| 12 | Upload and Processing Metadata Persistence | Validate MongoDB persistence for projects, assets, and chunks | In Progress |
 
 ---
 
 ## 📦 Branch 9 — Docker MongoDB Motor Infrastructure
 
 Branch 9 introduced the MongoDB infrastructure layer.
-
-It prepared the backend to connect to MongoDB asynchronously and added the foundation required for future metadata persistence.
 
 Main focus:
 
@@ -129,9 +112,7 @@ MongoDB store folder structure
 
 ## 📦 Branch 10 — Asset Metadata Schemes & Stores
 
-Branch 10 introduces the first metadata scheme and store layer.
-
-It defines how RAGForge represents projects, assets, and chunks at the database level.
+Branch 10 introduced the first metadata scheme and store layer.
 
 Main focus:
 
@@ -148,13 +129,11 @@ Asset store
 Chunk store
 ```
 
-This branch does not initialize MongoDB indexes. Indexing is intentionally kept for Branch 11.
-
 ---
 
-## 📦 Branch 11 — MongoDB Metadata Indexes
+## 📦 Branch 11 — MongoDB Metadata Indexes & Auth
 
-Branch 11 will add database indexes for the metadata layer.
+Branch 11 added database indexes and authenticated MongoDB access.
 
 Main focus:
 
@@ -164,43 +143,38 @@ Asset indexes
 DataChunk indexes
 Index initialization logic
 Database query readiness
+MongoDB authentication through Docker Compose
+Authenticated MongoDB connection string
+Environment example files
 ```
-
-Expected indexes include:
-
-```text
-project_id unique index
-asset_project_id index
-asset project/name index
-asset status index
-chunk_project_id index
-chunk_asset_id index
-chunk order index
-```
-
-This branch will improve query performance and prepare the system for larger datasets.
 
 ---
 
 ## 📦 Branch 12 — Upload and Processing Metadata Persistence
 
-Branch 12 will connect the existing upload and processing pipeline to MongoDB metadata persistence.
+Branch 12 validates the metadata persistence layer across MongoDB stores.
 
-Expected flow:
+Main focus:
 
 ```text
-Upload endpoint
-  ↓
-create project if needed
-  ↓
-create asset record
-  ↓
-processing endpoint updates asset status
-  ↓
-chunks are saved and linked to the asset
+Project creation and reuse
+Asset creation and reuse
+Uploaded asset retrieval
+Chunk insertion
+Chunk retrieval by asset
+Asset status update
+Asset chunk count update
+Project identifier validation with underscores and hyphens
+Validation utility script
 ```
 
-This branch will make the metadata layer active in the real ingestion workflow.
+Validated relationship:
+
+```text
+ProjectStore → AssetStore → ChunkStore
+```
+
+Branch 12 confirms that the metadata layer can persist and update real MongoDB records before the persistence logic is connected to the API workflow.
 
 ---
 
@@ -216,8 +190,6 @@ This milestone does not include:
 - RAG evaluation
 - production deployment
 
-Those belong to later milestones.
-
 ---
 
 ## ✅ Milestone Definition of Done
@@ -226,13 +198,15 @@ This milestone is complete when:
 
 - MongoDB infrastructure is available
 - MongoDB connection foundation is implemented
+- MongoDB authenticated local access works
 - project database scheme exists
 - asset database scheme exists
 - data chunk database scheme exists
 - MongoDB store classes exist
 - metadata indexes are initialized
-- upload metadata can be persisted
-- processing results can update metadata records
+- project metadata can be persisted
+- asset metadata can be persisted
 - chunks can be linked to projects and assets
+- asset processing metadata can be updated
 - existing tests pass
 - documentation is updated

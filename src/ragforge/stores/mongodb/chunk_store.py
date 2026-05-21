@@ -15,6 +15,26 @@ class ChunkStore(BaseMongoStore):
         super().__init__(db_client=db_client)
         self.collection = self.db_client[MongoCollection.DATA_CHUNKS.value]
 
+    @classmethod
+    async def create_instance(cls, db_client: object):
+        """
+        Create store instance and initialize collection indexes.
+        """
+        instance = cls(db_client=db_client)
+        await instance.init_collection()
+        return instance
+
+    async def init_collection(self) -> None:
+        """
+        Initialize MongoDB indexes for the data_chunks collection.
+        """
+        for index in DataChunk.get_indexes():
+            await self.collection.create_index(
+                index['key'],
+                name=index['name'],
+                unique=index['unique'],
+            )
+
     async def create_chunk(self, chunk: DataChunk) -> DataChunk:
         """
         Insert one data chunk.
@@ -45,10 +65,15 @@ class ChunkStore(BaseMongoStore):
         batch_size: int = 100,
     ) -> int:
         """
-        Insert chunks in batches.
+        Insert multiple chunks in batches.
+
+        Returns the number of inserted chunks.
         """
         if not chunks:
             return 0
+
+        if batch_size <= 0:
+            raise ValueError('batch_size must be greater than 0')
 
         inserted_count = 0
 
@@ -60,9 +85,8 @@ class ChunkStore(BaseMongoStore):
                 for chunk in batch
             ]
 
-            if operations:
-                result = await self.collection.bulk_write(operations)
-                inserted_count += result.inserted_count
+            result = await self.collection.bulk_write(operations)
+            inserted_count += result.inserted_count
 
         return inserted_count
 
@@ -91,7 +115,7 @@ class ChunkStore(BaseMongoStore):
         project_id: str | ObjectId,
     ) -> int:
         """
-        Delete all chunks belonging to a project.
+        Delete all chunks belonging to one project.
         """
         object_id = ObjectId(project_id) if isinstance(project_id, str) else project_id
 
@@ -115,26 +139,3 @@ class ChunkStore(BaseMongoStore):
         )
 
         return result.deleted_count
-
-    """
-    Branch 11
-    """
-    @classmethod
-    async def create_instance(cls, db_client: object):
-        """
-        Create store instance and initialize collection indexes./Branch
-        """
-        instance = cls(db_client=db_client)
-        await instance.init_collection()
-        return instance
-
-    async def init_collection(self) -> None:
-        """
-        Initialize MongoDB indexes for the data_chunks collection.
-        """
-        for index in DataChunk.get_indexes():
-            await self.collection.create_index(
-                index['key'],
-                name=index['name'],
-                unique=index['unique'],
-            )

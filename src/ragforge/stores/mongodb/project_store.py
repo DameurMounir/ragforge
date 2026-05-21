@@ -24,7 +24,7 @@ class ProjectStore(BaseMongoStore):
 
         return project
 
-    async def get_project_by_id(self, project_id: str) -> Project | None:
+    async def get_project_by_project_id(self, project_id: str) -> Project | None:
         """
         Return a project by its public project_id.
         """
@@ -39,7 +39,7 @@ class ProjectStore(BaseMongoStore):
         """
         Return an existing project or create it if missing.
         """
-        project = await self.get_project_by_id(project_id=project_id)
+        project = await self.get_project_by_project_id(project_id=project_id)
 
         if project is not None:
             return project
