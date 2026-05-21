@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 from bson.objectid import ObjectId
@@ -11,7 +12,18 @@ class Project(BaseModel):
     @field_validator('project_id')
     @classmethod
     def validate_project_id(cls, value: str) -> str:
-        if not value.isalnum():
+        """
+        Validate public project identifier.
+
+        Allowed characters:
+        - letters
+        - numbers
+        - underscore _
+        - hyphen -
+
+
+        """
+        if not re.match(r'^[a-zA-Z0-9_-]+$', value):
             raise ValueError('project_id must be alphanumeric')
 
         return value

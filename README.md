@@ -53,7 +53,7 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 | M1 | 🧱 Project Bootstrap & Environment | Repository, environment, Git workflow, README, and initial structure |
 | M2 | ⚙️ FastAPI Backend Foundation | Running FastAPI app with structured routes, env config, and health check |
 | M3 | 📄 Document Upload & Processing | Upload endpoint, file validation, project storage, and document ingestion foundation |
-| M4 | 🗄️ Database Metadata & Indexing | MongoDB metadata layer, asset schemes, stores, metadata indexes, and persistence foundation |
+| M4 | 🗄️ Database Metadata & Indexing & Auth | MongoDB metadata layer, asset schemes, stores, metadata indexes, and persistence foundation and Auth|
 | M5 | 🔁 Data Pipeline Checkpoint | Stable extraction, chunking, and ingestion pipeline |
 | M6 | 🔎 RAG Core | Embeddings, vector search, retrieval, and grounded answer generation |
 | M7 | 🐳 Production Deployment & Workers | Docker, PostgreSQL, Qdrant/PgVector, Redis, workers, monitoring, and deployment |
@@ -66,12 +66,12 @@ Current branch details are documented outside the README to keep this file stabl
 
 ### Current Branch
 
-[`Branch 11 — MongoDB Metadata Indexes & Auth`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-11-mongodb-metadata-indexes-auth.md)
+[`Branch 12 — Upload and Processing Metadata Persistence`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-12-upload-processing-metadata-persistence.md)
 
 Git branch:
 
 ```text
-feature/11-mongodb-metadata-indexes-auth
+feature/12-upload-processing-metadata-persistence
 ```
 
 ### Milestone Overview
@@ -80,6 +80,16 @@ feature/11-mongodb-metadata-indexes-auth
 
 
 ---
+
+
+## 5. Create Branch 12 doc
+
+Create:
+
+```text
+docs/milestones/milestone-04-database-metadata-indexing/branches/branch-12-upload-processing-metadata-persistence.md
+```
+
 
 ## 🧱 Architecture Overview
 
