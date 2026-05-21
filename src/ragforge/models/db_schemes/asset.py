@@ -54,3 +54,44 @@ class Asset(BaseModel):
         arbitrary_types_allowed=True,
         populate_by_name=True,
     )
+
+    
+    @classmethod
+    def get_indexes(cls) -> list[dict]:
+        """
+        Return MongoDB indexes required for the assets collection./Branch 11
+
+        These indexes prepare future queries like: 
+            get all project assets
+            find asset by name
+            filter assets by status
+            filter assets by type
+            find URL/web assets later
+        """
+        return [
+            {
+                'key': [('asset_project_id', 1)],
+                'name': 'asset_project_id_idx',
+                'unique': False,
+            },
+            {
+                'key': [('asset_project_id', 1), ('asset_name', 1)],
+                'name': 'asset_project_name_unique_idx',
+                'unique': True,
+            },
+            {
+                'key': [('asset_status', 1)],
+                'name': 'asset_status_idx',
+                'unique': False,
+            },
+            {
+                'key': [('asset_type', 1)],
+                'name': 'asset_type_idx',
+                'unique': False,
+            },
+            {
+                'key': [('source_uri', 1)],
+                'name': 'asset_source_uri_idx',
+                'unique': False,
+            },
+        ]

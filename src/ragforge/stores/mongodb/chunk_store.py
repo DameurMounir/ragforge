@@ -115,3 +115,26 @@ class ChunkStore(BaseMongoStore):
         )
 
         return result.deleted_count
+
+    """
+    Branch 11
+    """
+    @classmethod
+    async def create_instance(cls, db_client: object):
+        """
+        Create store instance and initialize collection indexes./Branch
+        """
+        instance = cls(db_client=db_client)
+        await instance.init_collection()
+        return instance
+
+    async def init_collection(self) -> None:
+        """
+        Initialize MongoDB indexes for the data_chunks collection.
+        """
+        for index in DataChunk.get_indexes():
+            await self.collection.create_index(
+                index['key'],
+                name=index['name'],
+                unique=index['unique'],
+            )
