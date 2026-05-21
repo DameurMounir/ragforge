@@ -20,3 +20,16 @@ class Project(BaseModel):
         arbitrary_types_allowed=True,
         populate_by_name=True,
     )
+       
+    @classmethod
+    def get_indexes(cls) -> list[dict]:
+        """
+        Return MongoDB indexes required for the projects collection./Branch 11
+        """
+        return [
+            {
+                'key': [('project_id', 1)],
+                'name': 'project_id_unique_idx',
+                'unique': True,
+            },
+        ]

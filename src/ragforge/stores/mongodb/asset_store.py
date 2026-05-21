@@ -89,3 +89,25 @@ class AssetStore(BaseMongoStore):
             return None
 
         return Asset(**record)
+
+    
+    
+    @classmethod
+    async def create_instance(cls, db_client: object):
+        """
+        Create store instance and initialize collection indexes./Branch 11
+        """
+        instance = cls(db_client=db_client)
+        await instance.init_collection()
+        return instance
+
+    async def init_collection(self) -> None:
+        """
+        Initialize MongoDB indexes for the assets collection.
+        """
+        for index in Asset.get_indexes():
+            await self.collection.create_index(
+                index['key'],
+                name=index['name'],
+                unique=index['unique'],
+            )

@@ -3,6 +3,7 @@ from src.ragforge.stores.mongodb.base_store import BaseMongoStore
 from src.ragforge.stores.mongodb.collections import MongoCollection
 
 
+
 class ProjectStore(BaseMongoStore):
     """
     MongoDB store for project records.
@@ -73,3 +74,24 @@ class ProjectStore(BaseMongoStore):
             projects.append(Project(**record))
 
         return projects, total_pages
+
+    
+    @classmethod
+    async def create_instance(cls, db_client: object):
+        """
+        Create store instance and initialize collection indexes./Branch 11
+        """
+        instance = cls(db_client=db_client)
+        await instance.init_collection()
+        return instance
+
+    async def init_collection(self) -> None:
+        """
+        Initialize MongoDB indexes for the projects collection.
+        """
+        for index in Project.get_indexes():
+            await self.collection.create_index(
+                index['key'],
+                name=index['name'],
+                unique=index['unique'],
+            )

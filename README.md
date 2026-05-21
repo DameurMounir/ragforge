@@ -66,17 +66,18 @@ Current branch details are documented outside the README to keep this file stabl
 
 ### Current Branch
 
-[`Branch 10 — Asset Metadata Schemes & Stores`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-10-asset-metadata-store.md)
+[`Branch 11 — MongoDB Metadata Indexes`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-11-mongodb-metadata-indexes.md)
 
 Git branch:
 
 ```text
-feature/10-asset-metadata-store
+feature/11-mongodb-metadata-indexes
 ```
 
 ### Milestone Overview
 
 [`Milestone 4 — Database Metadata & Indexing`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md)
+
 
 ---
 
