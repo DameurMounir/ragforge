@@ -76,7 +76,7 @@ feature/11-mongodb-metadata-indexes-auth
 
 ### Milestone Overview
 
-[`Milestone 4 — Database Metadata & Indexing`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md)
+[`Milestone 4 — Database Metadata & Indexing & Auth`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md)
 
 
 ---
