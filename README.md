@@ -66,12 +66,12 @@ Current branch details are documented outside the README to keep this file stabl
 
 ### Current Branch
 
-[`Branch 11 — MongoDB Metadata Indexes`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-11-mongodb-metadata-indexes.md)
+[`Branch 11 — MongoDB Metadata Indexes & Auth`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-11-mongodb-metadata-indexes-auth.md)
 
 Git branch:
 
 ```text
-feature/11-mongodb-metadata-indexes
+feature/11-mongodb-metadata-indexes-auth
 ```
 
 ### Milestone Overview

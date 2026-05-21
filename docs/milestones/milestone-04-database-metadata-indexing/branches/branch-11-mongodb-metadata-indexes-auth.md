@@ -1,10 +1,12 @@
-# Branch 11 — MongoDB Metadata Indexes
+# Branch 11 — MongoDB Metadata Indexes & Auth
 
 ## 🎯 Objective
 
-Add MongoDB metadata indexes for the RAGForge asset metadata layer.
+Add MongoDB metadata indexes and authenticated MongoDB access for the RAGForge asset metadata layer.
 
-This branch defines and initializes indexes for projects, assets, and data chunks to prepare the database layer for efficient metadata querying before upload and processing endpoints start writing metadata records automatically.
+This branch defines and initializes indexes for projects, assets, and data chunks. It also improves the local MongoDB setup by adding Docker Compose authentication through environment variables.
+
+The goal is to make the MongoDB metadata layer indexed, authenticated, and ready before upload and processing endpoints start writing metadata records automatically.
 
 ---
 
@@ -12,11 +14,17 @@ This branch defines and initializes indexes for projects, assets, and data chunk
 
 Branch 10 introduced the asset metadata schemes and MongoDB store classes.
 
-Branch 11 builds on that layer by adding index definitions and index initialization logic.
+Branch 11 builds on that layer by adding:
 
-The goal is to make metadata queries efficient, predictable, and ready for larger datasets before endpoint-level persistence is introduced.
+- index definitions
+- index initialization logic
+- authenticated MongoDB connection support
+- Docker Compose MongoDB credentials
+- MongoDB environment examples
 
-This branch keeps the architecture focused on the database metadata layer only.
+This branch keeps the architecture focused on database readiness.
+
+Endpoint-level metadata persistence is intentionally reserved for Branch 12.
 
 ---
 
@@ -55,6 +63,31 @@ track embedding/vector indexing state
 
 ---
 
+## 🔐 MongoDB Authentication
+
+This branch adds MongoDB authentication at the database infrastructure level.
+
+This means:
+
+```text
+MongoDB now requires username/password access.
+```
+
+This does **not** mean application user authentication.
+
+Out of scope:
+
+```text
+user login
+JWT
+API authentication
+role-based access control
+```
+
+Those belong to a future authentication/security milestone.
+
+---
+
 ## 🧱 Scope
 
 This branch includes:
@@ -64,7 +97,13 @@ This branch includes:
 - Add data chunk index definitions
 - Add collection initialization methods to MongoDB stores
 - Add `create_instance()` helpers to MongoDB stores
+- Add MongoDB authentication through Docker Compose environment variables
+- Add Docker MongoDB credential placeholders to `docker/.env.example`
+- Update root `.env.example` with authenticated MongoDB connection values
+- Update application settings for MongoDB auth values
+- Use authenticated MongoDB connection string
 - Validate MongoDB indexes manually
+- Validate authenticated MongoDB connection
 - Update Milestone 4 documentation
 - Update README current focus
 
@@ -73,6 +112,13 @@ This branch includes:
 ## 📁 Expected Files
 
 ```text
+docker/docker-compose.yml
+docker/.env.example
+.env.example
+.gitignore
+
+src/ragforge/core/config.py
+
 src/ragforge/models/db_schemes/project.py
 src/ragforge/models/db_schemes/asset.py
 src/ragforge/models/db_schemes/data_chunk.py
@@ -84,6 +130,74 @@ src/ragforge/stores/mongodb/chunk_store.py
 docs/milestones/milestone-04-database-metadata-indexing/branches/branch-11-mongodb-metadata-indexes.md
 docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md
 README.md
+```
+
+---
+
+## 🧩 Docker Compose Authentication
+
+MongoDB should be configured using Docker Compose environment variables:
+
+```yaml
+environment:
+  MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+  MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+```
+
+The local Docker environment file should define:
+
+```env
+MONGO_INITDB_ROOT_USERNAME=admin
+MONGO_INITDB_ROOT_PASSWORD=admin
+
+MONGODB_DATABASE=ragforge
+MONGODB_URL=mongodb://admin:admin@localhost:27007/ragforge?authSource=admin
+```
+
+The connection string must include:
+
+```text
+authSource=admin
+```
+
+because MongoDB root users are created inside the `admin` authentication database.
+
+---
+
+## 🧩 Environment Files
+
+Private environment files must not be committed:
+
+```text
+.env
+docker/.env
+```
+
+Example files should be committed:
+
+```text
+.env.example
+docker/.env.example
+```
+
+Expected root `.env.example` MongoDB section:
+
+```env
+MONGO_INITDB_ROOT_USERNAME=
+MONGO_INITDB_ROOT_PASSWORD=
+
+MONGODB_DATABASE=ragforge
+MONGODB_URL=mongodb://USERNAME:PASSWORD@localhost:27007/ragforge?authSource=admin
+```
+
+Expected `docker/.env.example`:
+
+```env
+MONGO_INITDB_ROOT_USERNAME=
+MONGO_INITDB_ROOT_PASSWORD=
+
+MONGODB_DATABASE=ragforge
+MONGODB_URL=mongodb://USERNAME:PASSWORD@localhost:27007/ragforge?authSource=admin
 ```
 
 ---
@@ -219,7 +333,14 @@ This method creates the indexes defined by the corresponding database scheme.
 
 Manual validation was performed using a temporary local validation script and Studio 3T.
 
-The validation confirmed that MongoDB created the expected custom metadata indexes for:
+The validation confirmed:
+
+```text
+MongoDB authenticated connection OK.
+MongoDB metadata indexes initialized successfully.
+```
+
+The validation also confirmed that MongoDB created the expected custom metadata indexes for:
 
 ```text
 projects
@@ -270,6 +391,18 @@ python -c "from src.ragforge.stores.mongodb import ProjectStore, AssetStore, Chu
 ```
 
 ```bash
+python -c "from src.ragforge.core.config import get_settings; s=get_settings(); print(s.MONGODB_URL)"
+```
+
+Expected MongoDB URL:
+
+```text
+mongodb://admin:admin@localhost:27007/ragforge?authSource=admin
+```
+
+Run tests:
+
+```bash
 python -m pytest
 ```
 
@@ -294,6 +427,9 @@ This branch does not include:
 - semantic search
 - augmented answer generation
 - citation-aware responses
+- application user authentication
+- JWT authentication
+- role-based access control
 
 Endpoint integration is intentionally reserved for Branch 12.
 
@@ -303,6 +439,11 @@ Endpoint integration is intentionally reserved for Branch 12.
 
 This branch is complete when:
 
+- MongoDB authentication is configured in Docker Compose
+- MongoDB credentials are read from environment variables
+- private `.env` files are ignored by Git
+- example environment files are committed
+- authenticated MongoDB connection works
 - project index definitions are added
 - asset index definitions are added
 - data chunk index definitions are added
