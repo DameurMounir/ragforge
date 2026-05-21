@@ -243,5 +243,13 @@ temp/
 storage/uploads/*
 !storage/uploads/.gitkeep
 
-# MongoDB runtime data
+
+
+# Private Docker environment files# Branch 11
+docker/.env
+docker/.env.*
+!docker/.env.example
+
+# MongoDB runtime data / Branch 11
 docker/ragforge_mongodb_data/
+mongodb/

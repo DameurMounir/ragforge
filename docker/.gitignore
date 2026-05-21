@@ -1,2 +1,5 @@
-# MongoDB local Docker data
-ragforge_mongodb_data/
+.env
+
+# MongoDB runtime data
+docker/ragforge_mongodb_data/
+mongodb/

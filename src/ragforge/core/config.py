@@ -47,8 +47,14 @@ class Settings(BaseSettings):
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ]
     
-    MONGODB_URL: str
+    #Branch 11 /auth
+    MONGO_INITDB_ROOT_USERNAME: str
+    MONGO_INITDB_ROOT_PASSWORD: str
+
     MONGODB_DATABASE: str
+    MONGODB_URL: str
+
+    #################
     
     # Root upload directory.
     # All uploaded files will be stored inside this folder.
