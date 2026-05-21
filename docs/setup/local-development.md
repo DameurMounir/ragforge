@@ -588,7 +588,7 @@ Before working on RAGForge, make sure:
 conda activate ragforge
 pip install -r requirements.txt
 cp .env.example .env
-uvicorn src.ragforge.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn src.ragforge.main:app --reload --reload-dir src --host 127.0.0.1 --port 8000
 ```
 
 Test:
