@@ -1,41 +1,95 @@
-# Milestone 4 — Database Metadata & Indexing & Auth
+# Milestone 4 — Database Metadata, Indexing & Ingestion Pipeline
 
-## 🎯 Objective
+## Goal
 
-Milestone 4 introduces the first database-backed metadata, indexing, and authenticated MongoDB layer for RAGForge.
+Milestone 4 builds the persistent metadata and ingestion foundation of RAGForge.
 
-After building the document upload and processing foundation in Milestone 3, this milestone adds MongoDB infrastructure, metadata schemes, MongoDB store classes, metadata indexes, MongoDB authentication, and metadata persistence validation for projects, assets, and extracted chunks.
+It connects:
 
-The goal is to move RAGForge from a file-based ingestion pipeline toward a metadata-driven RAG backend ready for persistence, indexing, semantic search, and augmented generation.
+```text
+Project
+  ↓
+Asset
+  ↓
+Uploaded file
+  ↓
+Document processing
+  ↓
+DataChunk
+  ↓
+MongoDB persistence
+```
 
----
+The objective is to make RAGForge able to persist uploaded documents, track their metadata, process them into chunks, and preserve the relationship between every chunk and its source asset.
 
-## 🧭 Why This Milestone Matters
+This milestone does not yet implement embeddings, vector search, semantic search, or answer generation. Those belong to Milestone 5.
 
-A production RAG system cannot rely only on files saved on disk.
+## Architecture evolution
 
+Before Milestone 4, RAGForge could upload and process documents mainly through local file logic.
 
-It needs a metadata layer capable of tracking:
+After Milestone 4, RAGForge has a persistent metadata layer based on MongoDB:
 
+```text
+MongoDB
+  ├── projects
+  ├── assets
+  └── data_chunks
+```
 
-- projects
-- uploaded assets
-- asset type and status
-- processing state
-- extracted chunks
-- chunk ownership
-- metadata persistence
-- metadata indexing
-- future semantic search readiness
+And the backend can now persist:
 
+```text
+Project metadata
+Asset metadata
+Processing status
+Chunk records
+Project-to-asset relation
+Asset-to-chunk relation
+```
 
-This milestone prepares RAGForge for later stages such as chunk persistence, embeddings, vector search, 
-semantic retrieval, citations, and augmented answer generation.
----
+## Branches
 
-## 🧱 Architecture Direction
+| Branch | Name | Purpose |
+|---|---|---|
+| Branch 9 | Docker MongoDB Motor Infrastructure | Add MongoDB infrastructure using Docker and Motor. |
+| Branch 10 | Asset Metadata Schemes & Stores | Add asset metadata models and stores. |
+| Branch 11 | MongoDB Metadata Indexes & Auth | Add indexes and MongoDB authentication support. |
+| Branch 12 | Upload and Processing Metadata Persistence | Persist upload metadata, processing metadata and chunk metadata. |
+| Branch 13 | Data Pipeline Enhancements | Move processing orchestration into `PipelineService` and support processing one asset or all project assets. |
 
-The core database relationship introduced in this milestone is:
+## Branch 9 — Docker MongoDB Motor Infrastructure
+
+Branch 9 introduces the MongoDB infrastructure layer.
+
+Main outcomes:
+
+```text
+Docker Compose
+  ↓
+MongoDB container
+  ↓
+Motor async client
+  ↓
+FastAPI database connection
+```
+
+This branch prepares RAGForge to move from local-only logic to persistent metadata storage.
+
+## Branch 10 — Asset Metadata Schemes & Stores
+
+Branch 10 introduces the metadata structures needed to describe uploaded files and future data sources.
+
+Main outcomes:
+
+```text
+Project model
+Asset model
+DataChunk model
+MongoDB stores
+```
+
+This branch makes the project able to represent the relationship:
 
 ```text
 Project
@@ -45,168 +99,198 @@ Asset
 DataChunk
 ```
 
-A project represents a logical workspace.
+## Branch 11 — MongoDB Metadata Indexes & Auth
 
-An asset represents a knowledge source attached to a project.
+Branch 11 strengthens the MongoDB layer.
 
-A data chunk represents a text unit extracted from an asset.
-
----
-
-## 🧩 Production Design Principles
+Main outcomes:
 
 ```text
-1. Keep database schemes separate from API routes.
-2. Keep MongoDB operations inside store classes.
-3. Keep business workflow logic inside services.
-4. Keep route handlers thin and focused.
-5. Track assets before creating chunks.
-6. Link every chunk to both project and asset.
-7. Add metadata indexes before relying on large-scale queries.
-8. Use authenticated database access for realistic local development.
-9. Prepare metadata for future semantic search and augmented answers.
+MongoDB authentication
+Indexes
+Reliable queries
+Metadata lookup performance
 ```
 
-The intended flow is:
+This branch prepares the persistence layer for real ingestion and later retrieval workloads.
+
+## Branch 12 — Upload and Processing Metadata Persistence
+
+Branch 12 connects file upload and processing to MongoDB metadata.
+
+Main outcomes:
 
 ```text
-routes
+Upload endpoint
   ↓
-services
+Project metadata
   ↓
-stores
+Asset metadata
   ↓
-db_schemes
+Processing metadata
   ↓
-MongoDB
+Chunk metadata
 ```
 
----
+After this branch, uploaded files are no longer only physical files. They are represented as persisted assets.
 
-## 🌿 Branch Plan
+## Branch 13 — Data Pipeline Enhancements
 
-| Branch | Name | Purpose | Status |
-|---|---|---|---|
-| 9 | Docker MongoDB Motor Infrastructure | Add MongoDB service, configuration, dependencies, and async connection foundation | Done |
-| 10 | Asset Metadata Schemes & Stores | Add database schemes and MongoDB store classes for projects, assets, and chunks | Done |
-| 11 | MongoDB Metadata Indexes & Auth | Add MongoDB index definitions, initialization logic, and authenticated MongoDB access | Done |
-| 12 | Upload and Processing Metadata Persistence | Validate MongoDB persistence for projects, assets, and chunks | In Progress |
+Branch 13 completes the ingestion pipeline by transforming the processing route into a clean orchestration flow.
 
----
-
-## 📦 Branch 9 — Docker MongoDB Motor Infrastructure
-
-Branch 9 introduced the MongoDB infrastructure layer.
-
-Main focus:
+Before Branch 13:
 
 ```text
-MongoDB Docker service
-MongoDB environment configuration
-MongoDB Python dependency
-Async database connection foundation
-MongoDB store folder structure
+documents.py handled processing logic directly
 ```
 
----
-
-## 📦 Branch 10 — Asset Metadata Schemes & Stores
-
-Branch 10 introduced the first metadata scheme and store layer.
-
-Main focus:
+After Branch 13:
 
 ```text
-Project scheme
-Asset scheme
-DataChunk scheme
-Asset type enum
-Asset status enum
-MongoDB collection enum
-Base MongoDB store
-Project store
-Asset store
-Chunk store
+documents.py
+  ↓
+PipelineService
+  ↓
+DocumentProcessingService
+  ↓
+Mongo stores
 ```
 
----
+This keeps the route thin and makes the processing pipeline reusable for future workers, background jobs, and agentic layers.
 
-## 📦 Branch 11 — MongoDB Metadata Indexes & Auth
+## Branch 13 processing modes
 
-Branch 11 added database indexes and authenticated MongoDB access.
+The `/process/{project_id}` endpoint now supports three modes.
 
-Main focus:
+### 1. Process all project FILE assets
 
-```text
-Project indexes
-Asset indexes
-DataChunk indexes
-Index initialization logic
-Database query readiness
-MongoDB authentication through Docker Compose
-Authenticated MongoDB connection string
-Environment example files
+When no `asset_id` and no `stored_filename` are provided, all project `FILE` assets are processed.
+
+```json
+{
+  "chunk_size": 500,
+  "overlap_size": 50,
+  "do_reset": true,
+  "include_chunks": false
+}
 ```
 
----
-
-## 📦 Branch 12 — Upload and Processing Metadata Persistence
-
-Branch 12 validates the metadata persistence layer across MongoDB stores.
-
-Main focus:
+Mode:
 
 ```text
-Project creation and reuse
-Asset creation and reuse
-Uploaded asset retrieval
-Chunk insertion
-Chunk retrieval by asset
+all_project_file_assets
+```
+
+### 2. Process one asset by asset_id
+
+```json
+{
+  "asset_id": "MONGODB_ASSET_ID",
+  "chunk_size": 500,
+  "overlap_size": 50,
+  "include_chunks": false
+}
+```
+
+Mode:
+
+```text
+single_asset_by_id
+```
+
+### 3. Process one asset by stored_filename
+
+```json
+{
+  "stored_filename": "stored_file_name.txt",
+  "chunk_size": 500,
+  "overlap_size": 50,
+  "include_chunks": false
+}
+```
+
+Mode:
+
+```text
+single_asset_by_filename
+```
+
+## Final Milestone 4 architecture
+
+```text
+FastAPI route
+  ↓
+Service orchestration
+  ↓
+MongoDB stores
+  ↓
+Persistent metadata
+```
+
+Detailed flow:
+
+```text
+Upload
+  ↓
+Project creation or lookup
+  ↓
+Asset creation
+  ↓
+File storage
+  ↓
+Processing request
+  ↓
+PipelineService
+  ↓
+DocumentProcessingService
+  ↓
+DataChunk creation
+  ↓
+ChunkStore persistence
+  ↓
 Asset status update
-Asset chunk count update
-Project identifier validation with underscores and hyphens
-Validation utility script
+  ↓
+Pipeline report
 ```
 
-Validated relationship:
+## Definition of done
+
+Milestone 4 is complete when:
+
+- MongoDB runs through Docker Compose.
+- FastAPI connects to MongoDB.
+- Projects are persisted.
+- Uploaded files are persisted as assets.
+- Asset metadata includes file name, stored name, size, type, storage path, and processing status.
+- Documents can be processed into chunks.
+- Chunks are persisted in MongoDB.
+- Every chunk keeps `chunk_project_id`.
+- Every chunk keeps `chunk_asset_id`.
+- The processing endpoint can process one asset by `asset_id`.
+- The processing endpoint can process one asset by `stored_filename`.
+- The processing endpoint can process all project `FILE` assets.
+- Asset processing status is updated after success or failure.
+- The route remains thin.
+- Pipeline orchestration lives in `PipelineService`.
+
+## Final checkpoint
+
+At the end of Milestone 4, RAGForge has a stable ingestion foundation:
 
 ```text
-ProjectStore → AssetStore → ChunkStore
+Upload
+  ↓
+Metadata persistence
+  ↓
+Document processing
+  ↓
+Chunk persistence
+  ↓
+Pipeline report
 ```
 
-Branch 12 confirms that the metadata layer can persist and update real MongoDB records before the persistence logic is connected to the API workflow.
+This prepares RAGForge for:
 
----
-
-## 🚫 Out of Scope for This Milestone
-
-This milestone does not include:
-
-- embedding generation
-- vector database integration
-- semantic search endpoint
-- LLM answer generation
-- citation-aware responses
-- RAG evaluation
-- production deployment
-
----
-
-## ✅ Milestone Definition of Done
-
-This milestone is complete when:
-
-- MongoDB infrastructure is available
-- MongoDB connection foundation is implemented
-- MongoDB authenticated local access works
-- project database scheme exists
-- asset database scheme exists
-- data chunk database scheme exists
-- MongoDB store classes exist
-- metadata indexes are initialized
-- project metadata can be persisted
-- asset metadata can be persisted
-- chunks can be linked to projects and assets
-- asset processing metadata can be updated
-- existing tests pass
-- documentation is updated
+```text
+Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
+```

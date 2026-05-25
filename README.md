@@ -2,7 +2,7 @@
 
 **RAGForge** is a production-oriented **Retrieval-Augmented Generation (RAG)** backend platform built step by step with real software engineering practices.
 
-The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, project-based storage, metadata management, text extraction, chunking, embeddings, vector search, RAG answer generation, background workers, and production deployment.
+The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, project-based storage, metadata management, text extraction, chunking, embeddings, vector search, RAG answer generation, background workers, observability, and production deployment.
 
 RAGForge is not a notebook demo. It is designed as a long-term AI engineering project focused on building a clean, scalable, and professional backend architecture.
 
@@ -50,13 +50,13 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 
 | Milestone | Focus | Expected Result |
 |---|---|---|
-| M1 | 🧱 Project Bootstrap & Environment | Repository, environment, Git workflow, README, and initial structure |
-| M2 | ⚙️ FastAPI Backend Foundation | Running FastAPI app with structured routes, env config, and health check |
-| M3 | 📄 Document Upload & Processing | Upload endpoint, file validation, project storage, and document ingestion foundation |
-| M4 | 🗄️ Database Metadata & Indexing & Auth | MongoDB metadata layer, asset schemes, stores, metadata indexes, and persistence foundation and Auth|
-| M5 | 🔁 Data Pipeline Checkpoint | Stable extraction, chunking, and ingestion pipeline |
-| M6 | 🔎 RAG Core | Embeddings, vector search, retrieval, and grounded answer generation |
-| M7 | 🐳 Production Deployment & Workers | Docker, PostgreSQL, Qdrant/PgVector, Redis, workers, monitoring, and deployment |
+| M1 | 🧱 Project Bootstrap & Environment | Repository, environment, Git workflow, README, and initial project structure |
+| M2 | ⚙️ FastAPI Backend Foundation | Running FastAPI app with structured routes, environment configuration, and health check |
+| M3 | 📄 Document Upload & Processing Foundation | Upload endpoint, file validation, project-based storage, and document processing foundation |
+| M4 | 🗄️ Database Metadata, Indexing & Ingestion Pipeline | MongoDB metadata layer, asset schemas, stores, indexes, upload metadata persistence, processing metadata persistence, and stable ingestion pipeline |
+| M5 | 🔎 RAG Core: LLM, Vector Store & Retrieval | LLM factory, embeddings, vector database, semantic search, retrieval, and grounded answer generation |
+| M6 | 🐳 Production Deployment & Workers | Docker deployment, PostgreSQL/PgVector evolution, Redis, Celery workers, schedulers, and production runtime setup |
+| M7 | 🛡️ Observability, Security & Agent-Ready Evolution | Monitoring, structured logs, evaluation, security hardening, and preparation for agentic system integration |
 
 ---
 
@@ -64,32 +64,55 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 
 Current branch details are documented outside the README to keep this file stable.
 
-### Current Branch
+### Latest Completed Branch
 
-[`Branch 12 — Upload and Processing Metadata Persistence`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-12-upload-processing-metadata-persistence.md)
+[`Branch 13 — Data Pipeline Enhancements`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md)
 
 Git branch:
 
 ```text
-feature/12-upload-processing-metadata-persistence
+feature/13-data-pipeline-enhancements
 ```
 
-### Milestone Overview
-
-[`Milestone 4 — Database Metadata & Indexing & Auth`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md)
-
-
----
-
-
-## 5. Create Branch 12 doc
-
-Create:
+Branch 13 completed the ingestion pipeline layer by moving processing orchestration into `PipelineService` and supporting three processing modes:
 
 ```text
-docs/milestones/milestone-04-database-metadata-indexing/branches/branch-12-upload-processing-metadata-persistence.md
+1. process all project FILE assets
+2. process one asset by asset_id
+3. process one asset by stored_filename
 ```
 
+### Completed Milestone
+
+[`Milestone 4 — Database Metadata, Indexing & Ingestion Pipeline`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md)
+
+Milestone 4 established the persistent metadata and ingestion foundation:
+
+```text
+Project
+  ↓
+Asset
+  ↓
+DocumentProcessingService
+  ↓
+DataChunk
+  ↓
+MongoDB persistence
+```
+
+### Next Development Focus
+
+```text
+Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
+```
+
+Next planned branch:
+
+```text
+Branch 14 — LLM Factory
+```
+
+---
 
 ## 🧱 Architecture Overview
 
@@ -115,7 +138,21 @@ Storage / Database / Vector Database / LLM
 API Response
 ```
 
-The architecture document is stable and should not be rewritten for every branch.
+After Branch 13, the document processing flow follows this cleaner structure:
+
+```text
+documents.py
+  ↓
+PipelineService
+  ↓
+DocumentProcessingService
+  ↓
+ProjectStore / AssetStore / ChunkStore
+  ↓
+MongoDB
+```
+
+The route stays thin. The orchestration lives in the service layer. The persistence logic stays in stores.
 
 Full architecture reference:
 
@@ -133,6 +170,10 @@ ragforge/
 ├── .env.example
 ├── .gitignore
 │
+├── docker/
+│   ├── docker-compose.yml
+│   └── ragforge_mongodb_data/
+│
 ├── docs/
 │   ├── architecture/
 │   │   └── backend-architecture.md
@@ -143,7 +184,11 @@ ragforge/
 │   │   └── milestone-04-database-metadata-indexing/
 │   │       ├── milestone-04-database-metadata-indexing.md
 │   │       └── branches/
-│   │           └── branch-10-asset-metadata-store.md
+│   │           ├── branch-09-docker-mongodb-motor.md
+│   │           ├── branch-10-asset-metadata-store.md
+│   │           ├── branch-11-mongodb-indexing-auth.md
+│   │           ├── branch-12-upload-processing-metadata-persistence.md
+│   │           └── branch-13-data-pipeline-enhancements.md
 │   ├── setup/
 │   │   └── local-development.md
 │   └── api/
@@ -161,16 +206,21 @@ ragforge/
     └── ragforge/
         ├── main.py
         ├── core/
-        ├── routes/
-        ├── services/
+        ├── exceptions/
         ├── models/
         │   ├── enums/
         │   └── db_schemes/
+        ├── routes/
+        │   └── documents.py
+        ├── schemas/
+        │   └── document_processing.py
+        ├── services/
+        │   ├── document_service.py
+        │   ├── document_processing_service.py
+        │   └── pipeline_service.py
         ├── stores/
         │   └── mongodb/
-        ├── schemas/
-        ├── utils/
-        └── exceptions/
+        └── utils/
 ```
 
 Detailed branch-level file changes belong in the relevant branch document, not in this README.
@@ -200,7 +250,19 @@ Local setup, environment preparation, installation commands, and run instruction
 Quick run command:
 
 ```bash
-uvicorn src.ragforge.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn src.ragforge.main:app --reload --reload-dir src --host 127.0.0.1 --port 8000
+```
+
+MongoDB is launched through the Docker Compose file inside the `docker/` directory:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml up -d
+```
+
+Check MongoDB container status:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml ps
 ```
 
 ---
@@ -211,6 +273,8 @@ uvicorn src.ragforge.main:app --reload --host 127.0.0.1 --port 8000
 |---|---|
 | [`docs/architecture/backend-architecture.md`](docs/architecture/backend-architecture.md) | Stable backend architecture and long-term design principles |
 | [`docs/milestones/`](docs/milestones/) | All milestone overviews, branch plans, and implementation history |
+| [`docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md) | Milestone 4 metadata and ingestion pipeline overview |
+| [`docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md) | Branch 13 implementation details and validation |
 | [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
 | [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 
@@ -228,11 +292,15 @@ Each branch should focus on one clear responsibility.
 
 Branch numbering is global across the project.
 
-Example:
+Examples:
 
 ```text
 Branch 9  → Docker MongoDB Motor Infrastructure
 Branch 10 → Asset Metadata Schemes & Stores
+Branch 11 → MongoDB Metadata Indexes & Auth
+Branch 12 → Upload and Processing Metadata Persistence
+Branch 13 → Data Pipeline Enhancements
+Branch 14 → LLM Factory
 ```
 
 Documentation rule:
@@ -277,6 +345,39 @@ RAGForge follows these principles:
 - document implementation details in milestone branch files
 - treat metadata as a first-class part of modern RAG architecture
 - link every chunk to its source asset for traceability and future citations
+- keep pipeline orchestration reusable for future workers and agentic layers
+
+---
+
+## ✅ Current Stable Backend Capability
+
+At the end of Branch 13, RAGForge can:
+
+```text
+Upload document
+  ↓
+Persist project and asset metadata
+  ↓
+Process one asset or all project assets
+  ↓
+Extract and split document content
+  ↓
+Persist DataChunk records
+  ↓
+Update asset processing status
+  ↓
+Return a structured pipeline report
+```
+
+Supported `/process/{project_id}` modes:
+
+```text
+all_project_file_assets
+single_asset_by_id
+single_asset_by_filename
+```
+
+This closes the ingestion foundation and prepares the project for the RAG Core milestone.
 
 ---
 
