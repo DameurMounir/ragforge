@@ -8,6 +8,14 @@ from enum import Enum
 class ResponseSignal(str, Enum):
     # General application signals.
     APP_HEALTHY = 'app_healthy'
+    INTERNAL_SERVER_ERROR = 'internal_server_error'
+
+    # Project signals.
+    PROJECT_NOT_FOUND = 'project_not_found'
+
+    # Asset signals.
+    ASSET_NOT_FOUND = 'asset_not_found'
+    NO_FILES_TO_PROCESS = 'no_files_to_process'
 
     # File validation signals.
     FILE_VALIDATION_SUCCESS = 'file_validation_success'
@@ -19,12 +27,12 @@ class ResponseSignal(str, Enum):
     FILE_UPLOAD_SUCCESS = 'file_upload_success'
     FILE_UPLOAD_FAILED = 'file_upload_failed'
 
-    # Generic error signal.
-    INTERNAL_SERVER_ERROR = 'internal_server_error'
-
+    # Document processing signals.
     DOCUMENT_NOT_FOUND = 'document_not_found'
     DOCUMENT_PROCESSING_SUCCESS = 'document_processing_success'
+    DOCUMENT_PROCESSING_PARTIAL_SUCCESS = (
+        'document_processing_partial_success'
+    )
     DOCUMENT_PROCESSING_FAILED = 'document_processing_failed'
     DOCUMENT_TYPE_NOT_SUPPORTED = 'document_type_not_supported'
     DOCUMENT_EMPTY_CONTENT = 'document_empty_content'
-    
