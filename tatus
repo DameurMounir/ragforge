@@ -1,7 +1,8 @@
   feature/10-asset-metadata-store[m
   feature/11-mongodb-metadata-indexes-auth[m
   feature/12-upload-processing-metadata-persistence[m
-* [32mfeature/13-data-pipeline-enhancements[m
+  feature/13-data-pipeline-enhancements[m
+* [32mfeature/14-llm-factory[m
   feature/2-fastapi-foundation[m
   feature/3-routes-env-config[m
   feature/4-service-architecture-and-settings[m

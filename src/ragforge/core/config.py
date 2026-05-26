@@ -55,6 +55,17 @@ class Settings(BaseSettings):
     MONGODB_URL: str
 
     #################
+
+        # LLM provider settings.
+    LLM_PROVIDER: str = 'fake'
+    LLM_DEFAULT_MODEL: str = 'fake-ragforge-model'
+    LLM_TEMPERATURE: float = 0.2
+    LLM_MAX_OUTPUT_TOKENS: int = 512
+    LLM_TIMEOUT_SECONDS: int = 60
+
+    # OpenAI-compatible provider settings.
+    OPENAI_API_KEY: str | None = None
+    OPENAI_BASE_URL: str | None = None
     
     # Root upload directory.
     # All uploaded files will be stored inside this folder.
