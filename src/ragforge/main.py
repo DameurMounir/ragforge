@@ -6,6 +6,8 @@ from src.ragforge.routes.health import health_router
 from src.ragforge.routes.documents import documents_router
 from src.ragforge.stores.mongodb.client import MongoDBClient
 
+from src.ragforge.routes.llm import llm_router
+
 
 app = FastAPI()
 
@@ -29,3 +31,4 @@ async def shutdown_db_client():
 app.include_router(base_router)
 app.include_router(health_router)
 app.include_router(documents_router)
+app.include_router(llm_router)

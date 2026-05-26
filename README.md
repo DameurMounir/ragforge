@@ -60,57 +60,56 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 
 ---
 
-## 🚦 Current Development Focus
 
-Current branch details are documented outside the README to keep this file stable.
+## 🚦 Current Development Focus
 
 ### Latest Completed Branch
 
-[`Branch 13 — Data Pipeline Enhancements`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md)
+Branch 13 — Data Pipeline Enhancements
+
+### Completed Milestone
+
+Milestone 4 — Database Metadata, Indexing & Ingestion Pipeline
+
+### Current Milestone
+
+Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
+
+### Current Branch
+
+Branch 14 — LLM Factory
 
 Git branch:
 
 ```text
-feature/13-data-pipeline-enhancements
+feature/14-llm-factory
 ```
 
-Branch 13 completed the ingestion pipeline layer by moving processing orchestration into `PipelineService` and supporting three processing modes:
+Branch 14 introduces the provider-neutral LLM generation layer.
 
-```text
-1. process all project FILE assets
-2. process one asset by asset_id
-3. process one asset by stored_filename
-```
+It adds:
 
-### Completed Milestone
+- LLM provider enum
+- LLM request and response schemas
+- LLM exceptions
+- Base LLM provider interface
+- Fake LLM provider
+- OpenAI-compatible LLM provider
+- LLM provider factory
+- LLM service
+- `/api/v1/llm/generate` endpoint
+- tests and validation script
 
-[`Milestone 4 — Database Metadata, Indexing & Ingestion Pipeline`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md)
+Branch 14 does not introduce vector database, embeddings, semantic search, grounded answers, or agents.
 
-Milestone 4 established the persistent metadata and ingestion foundation:
+---
 
-```text
-Project
-  ↓
-Asset
-  ↓
-DocumentProcessingService
-  ↓
-DataChunk
-  ↓
-MongoDB persistence
-```
+## Documentation Map Entries
 
-### Next Development Focus
-
-```text
-Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
-```
-
-Next planned branch:
-
-```text
-Branch 14 — LLM Factory
-```
+| Document | Purpose |
+|---|---|
+| [`docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md`](docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md) | Milestone 5 RAG Core overview |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md`](docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md) | Branch 14 LLM Factory implementation notes |
 
 ---
 
