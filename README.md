@@ -62,14 +62,6 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 
 ## 🚦 Current Development Focus
 
-### Latest Completed Branch
-
-Branch 14 — LLM Factory
-
-### Completed Milestone
-
-Milestone 4 — Database Metadata, Indexing & Ingestion Pipeline
-
 ### Current Milestone
 
 Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
