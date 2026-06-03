@@ -2,7 +2,7 @@
 
 **RAGForge** is a production-oriented **Retrieval-Augmented Generation (RAG)** backend platform built step by step with real software engineering practices.
 
-The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, project-based storage, metadata management, text extraction, chunking, embeddings, vector search, RAG answer generation, background workers, observability, and production deployment.
+The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, project-based storage, metadata management, text extraction, chunking, LLM integration, vector databases, embeddings, vector search, RAG answer generation, background workers, observability, and production deployment.
 
 RAGForge is not a notebook demo. It is designed as a long-term AI engineering project focused on building a clean, scalable, and professional backend architecture.
 
@@ -54,18 +54,17 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 | M2 | ⚙️ FastAPI Backend Foundation | Running FastAPI app with structured routes, environment configuration, and health check |
 | M3 | 📄 Document Upload & Processing Foundation | Upload endpoint, file validation, project-based storage, and document processing foundation |
 | M4 | 🗄️ Database Metadata, Indexing & Ingestion Pipeline | MongoDB metadata layer, asset schemas, stores, indexes, upload metadata persistence, processing metadata persistence, and stable ingestion pipeline |
-| M5 | 🔎 RAG Core: LLM, Vector Store & Retrieval | LLM factory, embeddings, vector database, semantic search, retrieval, and grounded answer generation |
+| M5 | 🔎 RAG Core: LLM, Vector Store & Retrieval | LLM factory, vector database factory, embeddings, semantic search, retrieval, and grounded answer generation |
 | M6 | 🐳 Production Deployment & Workers | Docker deployment, PostgreSQL/PgVector evolution, Redis, Celery workers, schedulers, and production runtime setup |
 | M7 | 🛡️ Observability, Security & Agent-Ready Evolution | Monitoring, structured logs, evaluation, security hardening, and preparation for agentic system integration |
 
 ---
 
-
 ## 🚦 Current Development Focus
 
 ### Latest Completed Branch
 
-Branch 13 — Data Pipeline Enhancements
+Branch 14 — LLM Factory
 
 ### Completed Milestone
 
@@ -77,30 +76,37 @@ Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
 
 ### Current Branch
 
-Branch 14 — LLM Factory
+Branch 15 — Vector DB Factory with Qdrant
 
 Git branch:
 
 ```text
-feature/14-llm-factory
+feature/15-vector-db-factory-qdrant
 ```
 
-Branch 14 introduces the provider-neutral LLM generation layer.
+Branch 15 introduces the provider-neutral vector database layer.
 
 It adds:
 
-- LLM provider enum
-- LLM request and response schemas
-- LLM exceptions
-- Base LLM provider interface
-- Fake LLM provider
-- OpenAI-compatible LLM provider
-- LLM provider factory
-- LLM service
-- `/api/v1/llm/generate` endpoint
-- tests and validation script
+- Qdrant Docker service
+- vector DB provider enum
+- vector DB record and search schemas
+- vector DB exceptions
+- base vector DB provider interface
+- Qdrant provider implementation
+- vector DB provider factory
+- vector DB service
+- validation script with fake vectors
+- factory tests
 
-Branch 14 does not introduce vector database, embeddings, semantic search, grounded answers, or agents.
+Branch 15 uses:
+
+```text
+qdrant-client==1.18.0
+QdrantClient.query_points()
+```
+
+Branch 15 does not introduce embedding generation, MongoDB chunk indexing, semantic search endpoints, grounded answers, or agents.
 
 ---
 
@@ -110,6 +116,7 @@ Branch 14 does not introduce vector database, embeddings, semantic search, groun
 |---|---|
 | [`docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md`](docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md) | Milestone 5 RAG Core overview |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md`](docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md) | Branch 14 LLM Factory implementation notes |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md`](docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md) | Branch 15 Vector DB Factory with Qdrant implementation notes |
 
 ---
 
@@ -151,7 +158,30 @@ ProjectStore / AssetStore / ChunkStore
 MongoDB
 ```
 
-The route stays thin. The orchestration lives in the service layer. The persistence logic stays in stores.
+After Branch 14 and Branch 15, the RAG Core foundation adds provider-based AI infrastructure:
+
+```text
+Application / Route Layer
+  ↓
+Service Layer
+  ├── LLMService
+  └── VectorDBService
+      ↓
+Provider Factories
+  ├── LLMProviderFactory
+  └── VectorDBProviderFactory
+      ↓
+Provider Interfaces
+  ├── BaseLLMProvider
+  └── BaseVectorDBProvider
+      ↓
+Provider Implementations
+  ├── FakeLLMProvider
+  ├── OpenAICompatibleLLMProvider
+  └── QdrantProvider
+```
+
+The route stays thin. The orchestration lives in the service layer. Provider-specific implementation details stay behind interfaces.
 
 Full architecture reference:
 
@@ -170,36 +200,35 @@ ragforge/
 ├── .gitignore
 │
 ├── docker/
-│   ├── docker-compose.yml
-│   └── ragforge_mongodb_data/
+│   └── docker-compose.yml
 │
 ├── docs/
 │   ├── architecture/
 │   │   └── backend-architecture.md
 │   ├── milestones/
 │   │   ├── milestone-03-document-upload/
-│   │   │   ├── milestone-03-document-upload.md
-│   │   │   └── branches/
-│   │   └── milestone-04-database-metadata-indexing/
-│   │       ├── milestone-04-database-metadata-indexing.md
+│   │   ├── milestone-04-database-metadata-indexing/
+│   │   └── milestone-05-rag-core/
+│   │       ├── milestone-05-rag-core.md
 │   │       └── branches/
-│   │           ├── branch-09-docker-mongodb-motor.md
-│   │           ├── branch-10-asset-metadata-store.md
-│   │           ├── branch-11-mongodb-indexing-auth.md
-│   │           ├── branch-12-upload-processing-metadata-persistence.md
-│   │           └── branch-13-data-pipeline-enhancements.md
+│   │           ├── branch-14-llm-factory.md
+│   │           └── branch-15-vector-db-factory-qdrant.md
 │   ├── setup/
 │   │   └── local-development.md
 │   └── api/
 │       └── endpoints.md
 │
 ├── resources/
+├── scripts/
+│   └── validation/
+│       └── validate_branch_15_vector_db.py
 ├── storage/
 │   └── uploads/
 │       └── {project_id}/
 │           └── documents/
 │
 ├── tests/
+│   └── test_vector_db_factory.py
 │
 └── src/
     └── ragforge/
@@ -209,6 +238,16 @@ ragforge/
         ├── models/
         │   ├── enums/
         │   └── db_schemes/
+        ├── providers/
+        │   ├── llm/
+        │   └── vector_db/
+        │       ├── base.py
+        │       ├── enums.py
+        │       ├── exceptions.py
+        │       ├── factory.py
+        │       ├── schemas.py
+        │       └── implementations/
+        │           └── qdrant_provider.py
         ├── routes/
         │   └── documents.py
         ├── schemas/
@@ -216,7 +255,9 @@ ragforge/
         ├── services/
         │   ├── document_service.py
         │   ├── document_processing_service.py
-        │   └── pipeline_service.py
+        │   ├── llm_service.py
+        │   ├── pipeline_service.py
+        │   └── vector_db_service.py
         ├── stores/
         │   └── mongodb/
         └── utils/
@@ -252,16 +293,28 @@ Quick run command:
 uvicorn src.ragforge.main:app --reload --reload-dir src --host 127.0.0.1 --port 8000
 ```
 
-MongoDB is launched through the Docker Compose file inside the `docker/` directory:
+MongoDB and Qdrant are launched through the Docker Compose file inside the `docker/` directory:
 
 ```bash
 docker compose --env-file .env -f docker/docker-compose.yml up -d
 ```
 
-Check MongoDB container status:
+Check container status:
 
 ```bash
 docker compose --env-file .env -f docker/docker-compose.yml ps
+```
+
+Check Qdrant health:
+
+```bash
+curl http://localhost:6333/healthz
+```
+
+Run the Branch 15 vector database validation script:
+
+```bash
+python scripts/validation/validate_branch_15_vector_db.py
 ```
 
 ---
@@ -274,6 +327,9 @@ docker compose --env-file .env -f docker/docker-compose.yml ps
 | [`docs/milestones/`](docs/milestones/) | All milestone overviews, branch plans, and implementation history |
 | [`docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md) | Milestone 4 metadata and ingestion pipeline overview |
 | [`docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md) | Branch 13 implementation details and validation |
+| [`docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md`](docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md) | Milestone 5 RAG Core overview |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md`](docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md) | Branch 14 LLM Factory implementation details |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md`](docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md) | Branch 15 Vector DB Factory with Qdrant implementation details |
 | [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
 | [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 
@@ -300,6 +356,7 @@ Branch 11 → MongoDB Metadata Indexes & Auth
 Branch 12 → Upload and Processing Metadata Persistence
 Branch 13 → Data Pipeline Enhancements
 Branch 14 → LLM Factory
+Branch 15 → Vector DB Factory with Qdrant
 ```
 
 Documentation rule:
@@ -335,6 +392,7 @@ RAGForge follows these principles:
 - move business logic to services
 - centralize configuration in `core/config.py`
 - use controlled response signals
+- use provider interfaces for replaceable external systems
 - keep runtime data outside source code
 - keep uploaded files out of Git
 - do not commit private `.env` files
@@ -350,7 +408,7 @@ RAGForge follows these principles:
 
 ## ✅ Current Stable Backend Capability
 
-At the end of Branch 13, RAGForge can:
+At the end of Branch 15, RAGForge can:
 
 ```text
 Upload document
@@ -368,7 +426,42 @@ Update asset processing status
 Return a structured pipeline report
 ```
 
-Supported `/process/{project_id}` modes:
+RAGForge also has:
+
+```text
+LLM provider layer
+  ↓
+Fake and OpenAI-compatible providers
+  ↓
+LLM service
+  ↓
+LLM generation endpoint
+```
+
+And now:
+
+```text
+VectorDBService
+  ↓
+VectorDBProviderFactory
+  ↓
+BaseVectorDBProvider
+  ↓
+QdrantProvider
+  ↓
+Qdrant Docker service
+```
+
+Branch 15 validates:
+
+- Qdrant connection,
+- collection creation,
+- single vector insertion,
+- batch vector insertion,
+- vector similarity search using `query_points()`,
+- validation collection cleanup.
+
+Supported `/process/{project_id}` modes from the ingestion pipeline:
 
 ```text
 all_project_file_assets
@@ -376,7 +469,7 @@ single_asset_by_id
 single_asset_by_filename
 ```
 
-This closes the ingestion foundation and prepares the project for the RAG Core milestone.
+This prepares RAGForge for Branch 16, where MongoDB chunks will be embedded and indexed into Qdrant.
 
 ---
 

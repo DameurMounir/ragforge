@@ -17,9 +17,21 @@ services:
       - ragforge-network
 
     restart: always
+  qdrant:
+    image: qdrant/qdrant
+    container_name: ragforge-qdrant
+    ports:
+      - '127.0.0.1:6333:6333'
+      - '127.0.0.1:6334:6334'
+    volumes:
+      - ragforge_qdrant_data:/qdrant/storage
+    networks:
+      - ragforge-network
+    restart: always
 
 networks:
   ragforge-network:
 
 volumes:
   ragforge_mongodb_data:
+  ragforge_qdrant_data:

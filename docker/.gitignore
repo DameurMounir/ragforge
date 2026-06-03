@@ -3,3 +3,7 @@
 # MongoDB runtime data
 docker/ragforge_mongodb_data/
 mongodb/
+
+
+# Optional Qdrant bind-mount storage if used later
+docker/ragforge_qdrant_data/

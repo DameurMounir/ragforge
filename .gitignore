@@ -253,3 +253,9 @@ docker/.env.*
 # MongoDB runtime data / Branch 11
 docker/ragforge_mongodb_data/
 mongodb/
+
+# Local vector DB fallback storage
+storage/vector_db/
+
+# Optional Qdrant bind-mount storage if used later
+docker/ragforge_qdrant_data/
