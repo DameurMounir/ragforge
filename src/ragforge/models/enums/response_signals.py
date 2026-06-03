@@ -36,3 +36,9 @@ class ResponseSignal(str, Enum):
     DOCUMENT_PROCESSING_FAILED = 'document_processing_failed'
     DOCUMENT_TYPE_NOT_SUPPORTED = 'document_type_not_supported'
     DOCUMENT_EMPTY_CONTENT = 'document_empty_content'
+
+    #indexing 
+    INDEXING_SUCCESS = 'indexing_success'
+    INDEXING_PARTIAL_SUCCESS = 'indexing_partial_success'
+    INDEXING_FAILED = 'indexing_failed'
+    NO_CHUNKS_TO_INDEX = 'no_chunks_to_index'
