@@ -7,9 +7,10 @@ from src.ragforge.providers.vector_db.schemas import (
 
 class VectorDBService:
     """
-    Service layer for vector database operations.
+    Provider-neutral service layer for vector database operations.
 
-    This keeps future routes and pipelines thin.
+    This service must not depend on Qdrant-specific configuration names.
+    It only uses generic vector DB settings from core/config.py.
     """
 
     def __init__(self, settings: object):
@@ -25,14 +26,10 @@ class VectorDBService:
         self.provider.disconnect()
 
     def ensure_default_collection(self, do_reset: bool = False) -> bool:
-        return self.provider.create_collection(
-            collection_name=getattr(
-                self.settings,
-                'QDRANT_COLLECTION_NAME',
-                'ragforge_chunks',
-            ),
-            vector_size=getattr(self.settings, 'QDRANT_VECTOR_SIZE', 1536),
-            distance=getattr(self.settings, 'QDRANT_DISTANCE', 'cosine'),
+        return self.ensure_collection(
+            collection_name=self.settings.VECTOR_DB_COLLECTION_NAME,
+            vector_size=self.settings.VECTOR_DB_VECTOR_SIZE,
+            distance=self.settings.VECTOR_DB_DISTANCE,
             do_reset=do_reset,
         )
 
@@ -40,7 +37,7 @@ class VectorDBService:
         self,
         collection_name: str,
         vector_size: int,
-        distance: str = 'cosine',
+        distance: str,
         do_reset: bool = False,
     ) -> bool:
         return self.provider.create_collection(

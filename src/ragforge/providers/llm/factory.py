@@ -13,6 +13,7 @@ class LLMProviderFactory:
     """
     Factory responsible for creating LLM providers from settings.
 
+    Runtime defaults must come from core/config.py, not from this factory.
     Services should not directly instantiate provider classes.
     """
 
@@ -21,7 +22,7 @@ class LLMProviderFactory:
         settings: object,
         provider: str | LLMProvider | None = None,
     ) -> BaseLLMProvider:
-        provider_value = provider or getattr(settings, 'LLM_PROVIDER', 'fake')
+        provider_value = provider or settings.LLM_PROVIDER
 
         try:
             selected_provider = (
@@ -36,29 +37,22 @@ class LLMProviderFactory:
 
         if selected_provider == LLMProvider.FAKE:
             return FakeLLMProvider(
-                model=getattr(
-                    settings,
-                    'LLM_DEFAULT_MODEL',
-                    'fake-ragforge-model',
-                )
+                model=settings.LLM_DEFAULT_MODEL,
             )
 
         if selected_provider == LLMProvider.OPENAI_COMPATIBLE:
+            base_url = settings.OPENAI_BASE_URL
+
+            if base_url == '':
+                base_url = None
+
             return OpenAICompatibleLLMProvider(
-                api_key=getattr(settings, 'OPENAI_API_KEY', None),
-                base_url=getattr(settings, 'OPENAI_BASE_URL', None),
-                model=getattr(settings, 'LLM_DEFAULT_MODEL', None),
-                temperature=getattr(settings, 'LLM_TEMPERATURE', 0.2),
-                max_output_tokens=getattr(
-                    settings,
-                    'LLM_MAX_OUTPUT_TOKENS',
-                    512,
-                ),
-                timeout_seconds=getattr(
-                    settings,
-                    'LLM_TIMEOUT_SECONDS',
-                    60,
-                ),
+                api_key=settings.OPENAI_API_KEY,
+                base_url=base_url,
+                model=settings.LLM_DEFAULT_MODEL,
+                temperature=settings.LLM_TEMPERATURE,
+                max_output_tokens=settings.LLM_MAX_OUTPUT_TOKENS,
+                timeout_seconds=settings.LLM_TIMEOUT_SECONDS,
             )
 
         raise LLMConfigurationError(

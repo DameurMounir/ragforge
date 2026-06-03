@@ -19,13 +19,16 @@ class IndexingService(BaseService):
     Branch 16 indexing orchestration service.
 
     Current implemented strategy:
-    DataChunk -> Embedding -> Qdrant Vector Point
+    DataChunk -> Embedding -> Vector DB Point
 
     Future-ready strategies:
     - late_chunking
     - contextual chunking
     - asset summary indexing
     - hierarchical retrieval
+
+    Important architectural rule:
+    this service depends on VectorDBService, not directly on Qdrant.
     """
 
     def __init__(self, settings: object):
@@ -44,12 +47,12 @@ class IndexingService(BaseService):
         chunk_store: ChunkStore,
     ) -> tuple[int, dict]:
         """
-        Index stored MongoDB chunks into Qdrant.
+        Index stored MongoDB chunks into the configured vector database.
 
         Branch 16 scope:
         - read DataChunk records from MongoDB,
         - generate embeddings,
-        - insert vectors into Qdrant,
+        - insert vectors into the configured vector DB,
         - mark chunks as embedded.
 
         This service does not perform semantic search.
@@ -81,32 +84,11 @@ class IndexingService(BaseService):
                 'asset_id': indexing_request.asset_id,
             }
 
-        collection_name = getattr(
-            self.settings,
-            'QDRANT_COLLECTION_NAME',
-            'ragforge_chunks',
-        )
-
-        requested_embedding_model = getattr(
-            self.settings,
-            'EMBEDDING_MODEL',
-            'text-embedding-3-small',
-        )
-
+        collection_name = self.settings.VECTOR_DB_COLLECTION_NAME
+        requested_embedding_model = self.settings.EMBEDDING_MODEL
         actual_embedding_model = requested_embedding_model
-
-        vector_size = getattr(
-            self.settings,
-            'EMBEDDING_VECTOR_SIZE',
-            1536,
-        )
-
-        qdrant_distance = getattr(
-            self.settings,
-            'QDRANT_DISTANCE',
-            'cosine',
-        )
-
+        vector_size = self.settings.EMBEDDING_VECTOR_SIZE
+        vector_distance = self.settings.VECTOR_DB_DISTANCE
         batch_size = indexing_request.batch_size
 
         indexed_results: list[IndexedChunkResult] = []
@@ -120,7 +102,7 @@ class IndexingService(BaseService):
             self.vector_db_service.ensure_collection(
                 collection_name=collection_name,
                 vector_size=vector_size,
-                distance=qdrant_distance,
+                distance=vector_distance,
                 do_reset=False,
             )
 

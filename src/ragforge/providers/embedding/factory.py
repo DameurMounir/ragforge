@@ -14,11 +14,13 @@ from src.ragforge.providers.embedding.implementations.openai_compatible_embeddin
 class EmbeddingProviderFactory:
     """
     Factory responsible for creating embedding providers from settings.
+
+    Runtime defaults must come from core/config.py, not from this factory.
     """
 
     @staticmethod
     def create_provider(settings: object) -> BaseEmbeddingProvider:
-        provider_value = getattr(settings, 'EMBEDDING_PROVIDER', 'fake')
+        provider_value = settings.EMBEDDING_PROVIDER
 
         try:
             selected_provider = EmbeddingProvider(str(provider_value))
@@ -27,24 +29,21 @@ class EmbeddingProviderFactory:
                 f'Unsupported embedding provider: {provider_value}'
             ) from error
 
-        dimensions = getattr(settings, 'EMBEDDING_VECTOR_SIZE', 1536)
-        model = getattr(settings, 'EMBEDDING_MODEL', 'text-embedding-3-small')
-
         if selected_provider == EmbeddingProvider.FAKE:
             return FakeEmbeddingProvider(
-                model='fake-embedding-model',
-                dimensions=dimensions,
+                model=settings.FAKE_EMBEDDING_MODEL,
+                dimensions=settings.EMBEDDING_VECTOR_SIZE,
             )
 
         if selected_provider == EmbeddingProvider.OPENAI_COMPATIBLE:
             api_key = (
-                getattr(settings, 'EMBEDDING_OPENAI_API_KEY', None)
-                or getattr(settings, 'OPENAI_API_KEY', None)
+                settings.EMBEDDING_OPENAI_API_KEY
+                or settings.OPENAI_API_KEY
             )
 
             base_url = (
-                getattr(settings, 'EMBEDDING_OPENAI_BASE_URL', None)
-                or getattr(settings, 'OPENAI_BASE_URL', None)
+                settings.EMBEDDING_OPENAI_BASE_URL
+                or settings.OPENAI_BASE_URL
             )
 
             if base_url == '':
@@ -53,8 +52,8 @@ class EmbeddingProviderFactory:
             return OpenAICompatibleEmbeddingProvider(
                 api_key=api_key,
                 base_url=base_url,
-                model=model,
-                dimensions=dimensions,
+                model=settings.EMBEDDING_MODEL,
+                dimensions=settings.EMBEDDING_VECTOR_SIZE,
             )
 
         raise EmbeddingConfigurationError(

@@ -14,6 +14,7 @@ class FakeSettings:
     EMBEDDING_PROVIDER = 'fake'
     EMBEDDING_MODEL = 'text-embedding-3-small'
     EMBEDDING_VECTOR_SIZE = 1536
+    FAKE_EMBEDDING_MODEL = 'fake-embedding-model'
 
 
 class BadSettings:
