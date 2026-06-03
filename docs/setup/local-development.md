@@ -318,6 +318,109 @@ This route is planned for Milestone 3.
 
 ---
 
+
+## 🐳 Run Local Docker Services
+
+RAGForge uses Docker Compose for local infrastructure services.
+
+In Branch 15, the main Docker service is **Qdrant**, used as the vector database.
+
+Run all Docker commands from the project root:
+
+```bash
+cd ~/development/tech/ai-engineering/projects/rag/ragforge
+```
+
+### Start Docker inside WSL, if needed
+
+If Docker is already running, skip this command.
+
+```bash
+sudo service docker start
+```
+
+Verify Docker:
+
+```bash
+docker --version
+docker compose version
+```
+
+### Start Qdrant only
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml up -d qdrant
+```
+
+### Start all services defined in Docker Compose
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml up -d
+```
+
+### Check running containers
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml ps
+```
+
+### Check Qdrant health
+
+```bash
+curl http://localhost:6333/healthz
+```
+
+Expected result:
+
+```text
+healthz check passed
+```
+
+### View Qdrant logs
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml logs -f qdrant
+```
+
+### Restart Qdrant
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml restart qdrant
+```
+
+### Stop Qdrant without deleting data
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml stop qdrant
+```
+
+### Stop all Docker services without deleting data
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml down
+```
+
+### Stop all Docker services and delete local volumes
+
+Use this only when you intentionally want to remove local Docker data.
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml down -v
+```
+
+### Branch 15 quick Docker workflow
+
+```bash
+conda activate ragforge
+sudo service docker start
+docker compose --env-file .env -f docker/docker-compose.yml up -d qdrant
+curl http://localhost:6333/healthz
+python scripts/validation/validate_branch_15_vector_db.py
+pytest
+```
+
+---
+
 ## 🧪 Run Tests
 
 Install testing dependencies if needed:
@@ -537,31 +640,33 @@ This displays the current folder clearly and puts the command input on a new lin
 
 ---
 
-## 🧭 Future Local Services
+## 🧭 Local Services Roadmap
 
-Later, local development will include:
+Qdrant is now part of the local development stack starting from Branch 15.
+
+Future services may include:
 
 ```text
 PostgreSQL
-Qdrant
 Redis
 Celery workers
 Flower dashboard
-Docker Compose
+Additional vector database providers
 ```
 
-The future local stack may look like:
+The progressive local stack becomes:
 
 ```text
 FastAPI
-PostgreSQL
+MongoDB
 Qdrant
+PostgreSQL
 Redis
 Celery
 Flower
 ```
 
-These services will be added progressively in future milestones.
+These services are added branch by branch, without mixing responsibilities.
 
 ---
 
@@ -573,6 +678,8 @@ Before working on RAGForge, make sure:
 - dependencies are installed
 - `.env` exists
 - API runs with Uvicorn
+- Docker is running when local services are needed
+- Qdrant starts when working on Branch 15 or later
 - `/docs` opens correctly
 - `/api/v1/` works
 - `/api/v1/health/` works
@@ -588,6 +695,8 @@ Before working on RAGForge, make sure:
 conda activate ragforge
 pip install -r requirements.txt
 cp .env.example .env
+sudo service docker start
+docker compose --env-file .env -f docker/docker-compose.yml up -d qdrant
 uvicorn src.ragforge.main:app --reload --reload-dir src --host 127.0.0.1 --port 8000
 ```
 

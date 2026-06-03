@@ -66,7 +66,24 @@ class Settings(BaseSettings):
     # OpenAI-compatible provider settings.
     OPENAI_API_KEY: str | None = None
     OPENAI_BASE_URL: str | None = None
-    
+
+        # Vector DB provider settings.
+    VECTOR_DB_PROVIDER: str = 'qdrant'
+
+    # Qdrant settings.
+    # server = connect to Docker/server Qdrant through QDRANT_URL.
+    # local = embedded Qdrant stored in QDRANT_LOCAL_PATH.
+    QDRANT_MODE: str = 'server'
+    QDRANT_URL: str = 'http://localhost:6333'
+    QDRANT_API_KEY: str | None = None
+    QDRANT_LOCAL_PATH: str = 'storage/vector_db/qdrant'
+
+    QDRANT_COLLECTION_NAME: str = 'ragforge_chunks'
+    QDRANT_VECTOR_SIZE: int = 1536
+    QDRANT_DISTANCE: str = 'cosine'
+    QDRANT_PREFER_GRPC: bool = False
+
+
     # Root upload directory.
     # All uploaded files will be stored inside this folder.
     UPLOAD_DIR: str = 'storage/uploads'
@@ -95,3 +112,4 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     # Create and return one Settings instance loaded from .env.
     return Settings()   
+
