@@ -1,5 +1,5 @@
 from bson.objectid import ObjectId
-from pymongo import InsertOne
+from pymongo import InsertOne, UpdateOne
 
 from src.ragforge.models.db_schemes import DataChunk
 from src.ragforge.stores.mongodb.base_store import BaseMongoStore
@@ -109,6 +109,99 @@ class ChunkStore(BaseMongoStore):
             chunks.append(DataChunk(**record))
 
         return chunks
+    
+    async def get_project_chunks(
+        self,
+        project_id: str | ObjectId,
+        asset_id: str | ObjectId | None = None,
+        only_not_embedded: bool = False,
+        limit: int | None = None,
+    ) -> list[DataChunk]:
+        """
+        Return chunks for a project, optionally filtered by asset.
+
+        Branch 16 uses this method to load chunks for embedding/indexing.
+        """
+        object_project_id = (
+            ObjectId(project_id)
+            if isinstance(project_id, str)
+            else project_id
+        )
+
+        query = {'chunk_project_id': object_project_id}
+
+        if asset_id is not None:
+            object_asset_id = (
+                ObjectId(asset_id)
+                if isinstance(asset_id, str)
+                else asset_id
+            )
+            query['chunk_asset_id'] = object_asset_id
+
+        if only_not_embedded:
+            query['embedded'] = False
+
+        cursor = self.collection.find(query).sort(
+            [
+                ('chunk_asset_id', 1),
+                ('chunk_order', 1),
+            ]
+        )
+
+        if limit is not None:
+            cursor = cursor.limit(limit)
+
+        chunks = []
+
+        async for record in cursor:
+            chunks.append(DataChunk(**record))
+
+        return chunks
+
+    async def mark_chunks_embedded(
+        self,
+        indexed_chunks: list[dict],
+    ) -> int:
+        """
+        Mark chunks as embedded after successful vector insertion.
+
+        Expected item shape:
+        {
+            'chunk_id': ObjectId,
+            'embedding_model': 'text-embedding-3-small',
+            'vector_id': '...'
+        }
+        """
+        if not indexed_chunks:
+            return 0
+
+        operations = []
+
+        for item in indexed_chunks:
+            chunk_id = item['chunk_id']
+
+            object_id = (
+                ObjectId(chunk_id)
+                if isinstance(chunk_id, str)
+                else chunk_id
+            )
+
+            operations.append(
+                UpdateOne(
+                    {'_id': object_id},
+                    {
+                        '$set': {
+                            'embedded': True,
+                            'embedding_model': item['embedding_model'],
+                            'vector_id': item['vector_id'],
+                        }
+                    },
+                )
+            )
+
+        result = await self.collection.bulk_write(operations)
+
+        return result.modified_count
 
     async def delete_chunks_by_project_id(
         self,

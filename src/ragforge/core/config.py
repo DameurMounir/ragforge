@@ -84,6 +84,16 @@ class Settings(BaseSettings):
     QDRANT_PREFER_GRPC: bool = False
 
 
+    #embedding 
+    EMBEDDING_PROVIDER: str = 'fake'
+    EMBEDDING_MODEL: str = 'text-embedding-3-small'
+    EMBEDDING_VECTOR_SIZE: int = 1536
+    EMBEDDING_BATCH_SIZE: int = 32
+
+    EMBEDDING_OPENAI_API_KEY: str | None = None
+    EMBEDDING_OPENAI_BASE_URL: str | None = None
+
+
     # Root upload directory.
     # All uploaded files will be stored inside this folder.
     UPLOAD_DIR: str = 'storage/uploads'
