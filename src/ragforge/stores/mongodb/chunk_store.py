@@ -168,7 +168,7 @@ class ChunkStore(BaseMongoStore):
         Expected item shape:
         {
             'chunk_id': ObjectId,
-            'embedding_model': 'text-embedding-3-small',
+            'embedding_model': 'embedding-model-name',
             'vector_id': '...'
         }
         """

@@ -89,10 +89,16 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = 'text-embedding-3-small'
     EMBEDDING_VECTOR_SIZE: int = 1536
     EMBEDDING_BATCH_SIZE: int = 32
+    FAKE_EMBEDDING_MODEL: str = 'fake-embedding-model'
 
     EMBEDDING_OPENAI_API_KEY: str | None = None
     EMBEDDING_OPENAI_BASE_URL: str | None = None
 
+
+    # Generic vector indexing settings.
+    VECTOR_DB_COLLECTION_NAME: str = 'ragforge_chunks'
+    VECTOR_DB_VECTOR_SIZE: int = 1536
+    VECTOR_DB_DISTANCE: str = 'cosine'
 
     # Root upload directory.
     # All uploaded files will be stored inside this folder.

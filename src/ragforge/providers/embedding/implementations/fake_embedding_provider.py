@@ -14,12 +14,14 @@ class FakeEmbeddingProvider(BaseEmbeddingProvider):
 
     It does not call external APIs.
     It creates stable pseudo-vectors from text hashes.
+
+    Model name and dimensions are injected from settings through the factory.
     """
 
     def __init__(
         self,
-        model: str = 'fake-embedding-model',
-        dimensions: int = 1536,
+        model: str,
+        dimensions: int,
     ):
         self.model = model
         self.dimensions = dimensions
