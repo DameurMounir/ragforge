@@ -10,6 +10,8 @@ from src.ragforge.routes.llm import llm_router
 from src.ragforge.routes.indexing import indexing_router
 from src.ragforge.routes.search import search_router
 
+from src.ragforge.routes.answers import answers_router
+
 
 app = FastAPI()
 
@@ -36,3 +38,4 @@ app.include_router(documents_router)
 app.include_router(llm_router)
 app.include_router(indexing_router)
 app.include_router(search_router)
+app.include_router(answers_router)
