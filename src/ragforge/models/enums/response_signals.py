@@ -42,3 +42,9 @@ class ResponseSignal(str, Enum):
     INDEXING_PARTIAL_SUCCESS = 'indexing_partial_success'
     INDEXING_FAILED = 'indexing_failed'
     NO_CHUNKS_TO_INDEX = 'no_chunks_to_index'
+    
+    #semantic search branch 18
+    SEMANTIC_SEARCH_SUCCESS = 'semantic_search_success'
+    SEMANTIC_SEARCH_FAILED = 'semantic_search_failed'
+    SEMANTIC_SEARCH_NO_RESULTS = 'semantic_search_no_results'
+    SEARCH_QUERY_EMPTY = 'search_query_empty'

@@ -72,74 +72,81 @@ Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
 
 ### Latest Completed Branch
 
-Branch 16 — Embeddings & Indexing Foundation
+Branch 17 — Semantic Search
 
 Git branch:
 
 ```text
-feature/16-embeddings-indexing
+feature/17-semantic-search
 ```
 
-Branch 16 introduces the indexing foundation that connects persisted MongoDB chunks to the vector database layer.
+Branch 17 introduces the retrieval layer of RAGForge.
 
-It adds:
-
-- embedding provider enum
-- embedding request and response schemas
-- embedding exceptions
-- base embedding provider interface
-- fake embedding provider
-- OpenAI-compatible embedding provider
-- embedding provider factory
-- indexing request and response schemas
-- indexing route
-- indexing service
-- ChunkStore indexing methods
-- VectorDBService provider-neutral cleanup
-- vector DB factory no-hardcode cleanup
-- LLM factory no-hardcode cleanup
-- validation script for indexing
-- embedding provider tests
-- indexing schema tests
-
-Branch 16 validates the following pipeline:
-
-```text
-MongoDB DataChunk
-  ↓
-EmbeddingProviderFactory
-  ↓
-EmbeddingProvider
-  ↓
-VectorRecord
-  ↓
-VectorDBService
-  ↓
-VectorDBProviderFactory
-  ↓
-QdrantProvider
-  ↓
-Qdrant collection
-```
-
-Branch 16 uses a fake embedding provider by default for local validation and testing. The OpenAI-compatible embedding provider is also implemented and ready for real embedding APIs through configuration.
-
-Branch 16 does not introduce semantic search, user query embedding, grounded answers, reranking, hybrid retrieval, full late chunking, or agents.
-
-### Next Branch
-
-Branch 17 — Semantic Search
-
-Branch 17 will connect:
+It adds semantic search over already-indexed chunks:
 
 ```text
 User query
   ↓
+EmbeddingProviderFactory
+  ↓
 Query embedding
+  ↓
+VectorDBService
   ↓
 Vector similarity search
   ↓
+Ranked evidence chunks with source metadata
+```
+
+It adds:
+
+- semantic search request schema,
+- semantic search response schema,
+- source-ready evidence schema,
+- semantic search service,
+- semantic search route,
+- Branch 17 validation script,
+- semantic search schema tests,
+- semantic search service tests,
+- Qdrant search-result metadata normalization,
+- source-ready vector search results for Branch 18.
+
+Branch 17 validates that RAGForge can search indexed vectors and return ranked evidence with:
+
+```text
+record_id
+chunk_id
+asset_id
+project_id
+chunk_order
+score
+text
+metadata
+source
+```
+
+Branch 17 does **not** generate final answers. Answer generation with sources belongs to Branch 18.
+
+### Next Branch
+
+Branch 18 — Augmented Answers with Sources
+
+Branch 18 will connect:
+
+```text
+Question
+  ↓
+SemanticSearchService
+  ↓
 Ranked evidence chunks
+  ↓
+Context builder
+  ↓
+Prompt builder
+  ↓
+LLMService
+  ↓
+Grounded answer with sources
 ```
 
 ---
@@ -152,6 +159,7 @@ Ranked evidence chunks
 | [`docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md`](docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md) | Branch 14 LLM Factory implementation notes |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md`](docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md) | Branch 15 Vector DB Factory with Qdrant implementation notes |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md`](docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md) | Branch 16 Embeddings & Indexing Foundation implementation notes |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md`](docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md) | Branch 17 Semantic Search implementation notes |
 
 ---
 
@@ -234,6 +242,28 @@ VectorDBService
 VectorDBProviderFactory
   ↓
 Vector DB Provider
+```
+
+After Branch 17, the semantic search path is:
+
+```text
+Search Route
+  ↓
+SemanticSearchService
+  ↓
+ProjectStore
+  ↓
+EmbeddingProviderFactory
+  ↓
+EmbeddingProvider
+  ↓
+VectorDBService
+  ↓
+VectorDBProviderFactory
+  ↓
+Vector DB Provider
+  ↓
+Ranked Evidence
 ```
 
 The route stays thin. The orchestration lives in the service layer. Provider-specific implementation details stay behind interfaces.
@@ -329,7 +359,8 @@ ragforge/
 │   │       └── branches/
 │   │           ├── branch-14-llm-factory.md
 │   │           ├── branch-15-vector-db-factory-qdrant.md
-│   │           └── branch-16-embeddings-indexing.md
+│   │           ├── branch-16-embeddings-indexing.md
+│   │           └── branch-17-semantic-search.md
 │   ├── setup/
 │   │   └── local-development.md
 │   └── api/
@@ -340,6 +371,7 @@ ragforge/
 │   └── validation/
 │       ├── validate_branch_15_vector_db.py
 │       └── validate_branch_16_indexing.py
+│       └── validate_branch_17_semantic_search.py
 ├── storage/
 │   └── uploads/
 │       └── {project_id}/
@@ -351,6 +383,8 @@ ragforge/
 │   ├── test_llm_factory.py
 │   ├── test_llm_service.py
 │   └── test_vector_db_factory.py
+│   ├── test_search_schemas.py
+│   └── test_semantic_search_service.py
 │
 └── src/
     └── ragforge/
@@ -381,17 +415,20 @@ ragforge/
         │           └── qdrant_provider.py
         ├── routes/
         │   ├── documents.py
-        │   └── indexing.py
+        │   ├── indexing.py
+        │   └── search.py
         ├── schemas/
         │   ├── document_processing.py
-        │   └── indexing.py
+        │   ├── indexing.py
+        │   └── search.py
         ├── services/
         │   ├── document_service.py
         │   ├── document_processing_service.py
         │   ├── indexing_service.py
         │   ├── llm_service.py
         │   ├── pipeline_service.py
-        │   └── vector_db_service.py
+        │   ├── vector_db_service.py
+        │   └── semantic_search_service.py
         ├── stores/
         │   └── mongodb/
         └── utils/
@@ -455,6 +492,7 @@ Run the Branch 16 indexing validation script:
 
 ```bash
 python scripts/validation/validate_branch_16_indexing.py
+│       └── validate_branch_17_semantic_search.py
 ```
 
 Run tests:
@@ -507,7 +545,64 @@ Example response:
 
 ---
 
-## ⚙️ Branch 16 Configuration
+## 🔍 Branch 17 Semantic Search Endpoint
+
+Branch 17 adds the semantic search endpoint:
+
+```http
+POST /api/v1/search/{project_id}
+```
+
+Example request:
+
+```json
+{
+  "query": "indexing pipeline fake embedding Qdrant",
+  "limit": 5,
+  "asset_id": null,
+  "min_score": null,
+  "include_text": true,
+  "include_metadata": true
+}
+```
+
+Example response:
+
+```json
+{
+  "signal": "semantic_search_success",
+  "message": "Semantic search completed.",
+  "project_id": "project16test",
+  "query": "indexing pipeline fake embedding Qdrant",
+  "collection_name": "ragforge_chunks",
+  "embedding_model": "fake-embedding-model",
+  "total_results": 1,
+  "results": [
+    {
+      "rank": 1,
+      "score": -0.045289338,
+      "record_id": "6a2053a1c374e1d233e0e76b",
+      "chunk_id": "6a2053a1c374e1d233e0e76b",
+      "asset_id": "6a20538ec374e1d233e0e76a",
+      "project_id": "6a20538ec374e1d233e0e769",
+      "chunk_order": 1,
+      "text": "RAGForge Branch 16 validates the indexing pipeline...",
+      "metadata": {
+        "index_level": "chunk",
+        "indexing_strategy": "simple_chunk",
+        "source_type": "data_chunk",
+        "embedding_model": "fake-embedding-model"
+      }
+    }
+  ]
+}
+```
+
+The fake embedding provider uses deterministic pseudo-vectors, so the score is not expected to behave like a real semantic embedding score. With real embedding providers, the score becomes semantically meaningful.
+
+---
+
+## ⚙️ RAG Core Configuration
 
 Generic vector indexing configuration:
 
@@ -539,6 +634,16 @@ FAKE_EMBEDDING_MODEL="fake-embedding-model"
 
 EMBEDDING_OPENAI_API_KEY=""
 EMBEDDING_OPENAI_BASE_URL=""
+```
+
+Semantic search configuration:
+
+```env
+SEARCH_DEFAULT_LIMIT=5
+SEARCH_MAX_LIMIT=20
+# SEARCH_MIN_SCORE=
+SEARCH_INCLUDE_TEXT_DEFAULT=true
+SEARCH_INCLUDE_METADATA_DEFAULT=true
 ```
 
 LLM configuration:
@@ -596,6 +701,7 @@ Branch 13 → Data Pipeline Enhancements
 Branch 14 → LLM Factory
 Branch 15 → Vector DB Factory with Qdrant
 Branch 16 → Embeddings & Indexing Foundation
+Branch 17 → Semantic Search
 ```
 
 Documentation rule:
@@ -644,13 +750,14 @@ RAGForge follows these principles:
 - document implementation details in milestone branch files
 - treat metadata as a first-class part of modern RAG architecture
 - link every chunk to its source asset for traceability and future citations
+- return source-ready evidence before answer generation
 - keep pipeline orchestration reusable for future workers and agentic layers
 
 ---
 
 ## ✅ Current Stable Backend Capability
 
-At the end of Branch 16, RAGForge can:
+At the end of Branch 17, RAGForge can:
 
 ```text
 Upload document
@@ -671,7 +778,9 @@ Index vectors into Qdrant
   ↓
 Mark chunks as embedded
   ↓
-Return a structured indexing report
+Search indexed vectors by user query
+  ↓
+Return ranked evidence chunks with source metadata
 ```
 
 RAGForge also has:
@@ -700,7 +809,7 @@ QdrantProvider
 Qdrant Docker service
 ```
 
-And now:
+And:
 
 ```text
 EmbeddingProviderFactory
@@ -714,14 +823,28 @@ IndexingService
 Qdrant vector indexing
 ```
 
-Branch 16 validates:
+And now:
+
+```text
+SemanticSearchService
+  ↓
+Query embedding
+  ↓
+VectorDBService search
+  ↓
+Ranked source-ready evidence
+```
+
+Branch 17 validates:
 
 - document upload,
 - document processing,
 - chunk persistence,
 - embedding generation with fake provider,
 - vector indexing into Qdrant,
-- chunk embedded status update,
+- semantic search over indexed vectors,
+- source-ready evidence response,
+- chunk/asset/project metadata preservation,
 - provider-neutral service architecture,
 - no hidden `getattr(settings, ...)` fallback in providers/services/routes,
 - no Qdrant-specific configuration leakage into services/routes.
@@ -734,15 +857,16 @@ single_asset_by_id
 single_asset_by_filename
 ```
 
-This prepares RAGForge for Branch 17, where user queries will be embedded and searched against indexed Qdrant vectors.
+This prepares RAGForge for Branch 18, where retrieved evidence will be used to generate grounded answers with sources.
 
 ---
 
-## ✅ Branch 16 Validation Result
+## ✅ Branch 17 Validation Result
 
 ```text
-11 passed
+20 passed
 Branch 16 indexing validation passed
+Branch 17 semantic search validation passed
 ```
 
 Architecture audit:
@@ -750,6 +874,19 @@ Architecture audit:
 ```text
 No Qdrant-specific config leakage in services/routes.
 No hidden settings fallback in providers/services/routes.
+```
+
+Branch 17 evidence result includes:
+
+```text
+record_id
+chunk_id
+asset_id
+project_id
+chunk_order
+text
+metadata
+source
 ```
 
 ---
