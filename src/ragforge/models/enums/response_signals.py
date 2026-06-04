@@ -43,8 +43,13 @@ class ResponseSignal(str, Enum):
     INDEXING_FAILED = 'indexing_failed'
     NO_CHUNKS_TO_INDEX = 'no_chunks_to_index'
     
-    #semantic search branch 18
+    #Branch 17 semantic search 
     SEMANTIC_SEARCH_SUCCESS = 'semantic_search_success'
     SEMANTIC_SEARCH_FAILED = 'semantic_search_failed'
     SEMANTIC_SEARCH_NO_RESULTS = 'semantic_search_no_results'
     SEARCH_QUERY_EMPTY = 'search_query_empty'
+
+    # Branch 18 grounded answer signals.
+    RAG_ANSWER_SUCCESS = 'rag_answer_success'
+    RAG_ANSWER_FAILED = 'rag_answer_failed'
+    RAG_ANSWER_NO_CONTEXT = 'rag_answer_no_context'

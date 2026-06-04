@@ -107,6 +107,13 @@ class Settings(BaseSettings):
     SEARCH_INCLUDE_TEXT_DEFAULT: bool = True
     SEARCH_INCLUDE_METADATA_DEFAULT: bool = True
 
+    # Branch 18 grounded answer settings.
+    RAG_ANSWER_DEFAULT_LIMIT: int = 5
+    RAG_ANSWER_MAX_CONTEXT_CHARS: int = 8000
+    RAG_ANSWER_INCLUDE_SOURCES_DEFAULT: bool = True
+    RAG_ANSWER_INCLUDE_EVIDENCE_DEFAULT: bool = True
+    RAG_ANSWER_DEBUG_PROMPT_DEFAULT: bool = False
+
     # Root upload directory.
     # All uploaded files will be stored inside this folder.
     UPLOAD_DIR: str = 'storage/uploads'

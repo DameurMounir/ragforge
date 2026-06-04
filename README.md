@@ -2,7 +2,7 @@
 
 **RAGForge** is a production-oriented **Retrieval-Augmented Generation (RAG)** backend platform built step by step with real software engineering practices.
 
-The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, project-based storage, metadata management, text extraction, chunking, LLM integration, vector databases, embeddings, indexing, vector search, RAG answer generation, background workers, observability, and production deployment.
+The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, project-based storage, metadata management, text extraction, chunking, LLM integration, vector databases, embeddings, indexing, semantic search, grounded answer generation, background workers, observability, security, and production deployment.
 
 RAGForge is not a notebook demo. It is designed as a long-term AI engineering project focused on building a clean, scalable, and professional backend architecture.
 
@@ -14,7 +14,7 @@ RAGForge aims to become a modular foundation for building production-ready RAG s
 
 The objective is to master the full engineering path from a basic backend service to a production-ready AI platform that can later be reused by applications, websites, internal tools, or agent systems as a reliable knowledge backend.
 
-RAGForge is also designed as one infrastructure brick inside a broader agentic systems architecture. It is not limited to naive RAG. It prepares the foundation for retrieval tools, agent tools, orchestration layers, observability, and future AI system components.
+RAGForge is also designed as one infrastructure brick inside a broader agentic systems architecture. It is not limited to naive RAG. It prepares the foundation for retrieval tools, answer-generation tools, source-grounded knowledge access, orchestration layers, observability, and future AI system components.
 
 ---
 
@@ -22,13 +22,13 @@ RAGForge is also designed as one infrastructure brick inside a broader agentic s
 
 RAGForge is built with the understanding that **RAG is not dead**.
 
-What is becoming obsolete is **naive RAG**: systems that only split documents into chunks, retrieve a few similar passages, and pass them directly to an LLM without strong metadata, structure, provenance, indexing, or workflow control.
+What is becoming obsolete is **naive RAG**: systems that only split documents into chunks, retrieve a few similar passages, and pass them directly to an LLM without strong metadata, structure, provenance, indexing, source control, or workflow discipline.
 
 RAGForge follows a more modern **knowledge-oriented RAG direction**.
 
-The goal is to evolve from simple document retrieval toward a production-grade knowledge backend where every source is tracked as an asset, every extracted chunk is linked to its origin, metadata is persisted, vectors are indexed, and future retrieval can support grounded answers, citations, semantic search, and agent-ready knowledge access.
+The goal is to evolve from simple document retrieval toward a production-grade knowledge backend where every source is tracked as an asset, every extracted chunk is linked to its origin, metadata is persisted, vectors are indexed, semantic search returns source-ready evidence, and grounded answers can be generated with structured sources.
 
-The architectural direction is:
+The current architectural direction is:
 
 ```text
 Project
@@ -43,7 +43,7 @@ Vector Indexing
   ↓
 Semantic Search
   ↓
-Grounded / Augmented Answer
+Grounded / Augmented Answer with Sources
 ```
 
 This makes RAGForge more than a basic RAG demo. It is designed as a foundation for structured knowledge systems that can later support applications, websites, internal tools, and agentic AI workflows.
@@ -72,66 +72,17 @@ Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
 
 ### Latest Completed Branch
 
-Branch 17 — Semantic Search
+Branch 18 — Augmented Answers with Sources
 
 Git branch:
 
 ```text
-feature/17-semantic-search
+feature/18-augmented-answers-with-sources
 ```
 
-Branch 17 introduces the retrieval layer of RAGForge.
+Branch 18 completes the first functional end-to-end RAG Core flow.
 
-It adds semantic search over already-indexed chunks:
-
-```text
-User query
-  ↓
-EmbeddingProviderFactory
-  ↓
-Query embedding
-  ↓
-VectorDBService
-  ↓
-Vector similarity search
-  ↓
-Ranked evidence chunks with source metadata
-```
-
-It adds:
-
-- semantic search request schema,
-- semantic search response schema,
-- source-ready evidence schema,
-- semantic search service,
-- semantic search route,
-- Branch 17 validation script,
-- semantic search schema tests,
-- semantic search service tests,
-- Qdrant search-result metadata normalization,
-- source-ready vector search results for Branch 18.
-
-Branch 17 validates that RAGForge can search indexed vectors and return ranked evidence with:
-
-```text
-record_id
-chunk_id
-asset_id
-project_id
-chunk_order
-score
-text
-metadata
-source
-```
-
-Branch 17 does **not** generate final answers. Answer generation with sources belongs to Branch 18.
-
-### Next Branch
-
-Branch 18 — Augmented Answers with Sources
-
-Branch 18 will connect:
+It connects semantic search evidence to grounded answer generation:
 
 ```text
 Question
@@ -140,14 +91,67 @@ SemanticSearchService
   ↓
 Ranked evidence chunks
   ↓
-Context builder
+RAGContextBuilder
   ↓
-Prompt builder
+RAG prompt builder
   ↓
 LLMService
   ↓
 Grounded answer with sources
 ```
+
+It adds:
+
+- answer request schema,
+- answer response schema,
+- source schema,
+- evidence schema,
+- `RAGAnswerService`,
+- `RAGContextBuilder`,
+- isolated RAG answer prompt builder,
+- answer route,
+- Branch 18 validation script,
+- answer schema tests,
+- context builder tests,
+- answer service tests,
+- source-aware response structure,
+- debug prompt control,
+- complete answer endpoint validation.
+
+Branch 18 validates that RAGForge can:
+
+```text
+Upload document
+  ↓
+Process document
+  ↓
+Persist chunks in MongoDB
+  ↓
+Index chunk embeddings into Qdrant
+  ↓
+Search indexed vectors
+  ↓
+Build source-numbered context
+  ↓
+Generate a grounded answer
+  ↓
+Return answer + sources + evidence
+```
+
+### Next Branch
+
+Branch 19 — RAG Core Stabilization
+
+Branch 19 will stabilize the full RAG Core v1 by improving:
+
+- end-to-end validation,
+- error handling,
+- local/demo readiness,
+- documentation consistency,
+- regression testing,
+- API examples,
+- local LLM readiness,
+- professional cleanup before moving toward production deployment.
 
 ---
 
@@ -160,6 +164,7 @@ Grounded answer with sources
 | [`docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md`](docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md) | Branch 15 Vector DB Factory with Qdrant implementation notes |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md`](docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md) | Branch 16 Embeddings & Indexing Foundation implementation notes |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md`](docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md) | Branch 17 Semantic Search implementation notes |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md`](docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md) | Branch 18 Augmented Answers with Sources implementation notes |
 
 ---
 
@@ -187,7 +192,7 @@ Storage / Database / Vector Database / LLM / Embedding Provider
 API Response
 ```
 
-After Branch 13, the document processing flow follows this cleaner structure:
+After Branch 13, the document processing flow follows this structure:
 
 ```text
 documents.py
@@ -266,6 +271,24 @@ Vector DB Provider
 Ranked Evidence
 ```
 
+After Branch 18, the grounded answer path is:
+
+```text
+Answers Route
+  ↓
+RAGAnswerService
+  ↓
+SemanticSearchService
+  ↓
+RAGContextBuilder
+  ↓
+RAG Prompt Builder
+  ↓
+LLMService
+  ↓
+Answer + Sources + Evidence
+```
+
 The route stays thin. The orchestration lives in the service layer. Provider-specific implementation details stay behind interfaces.
 
 Full architecture reference:
@@ -325,6 +348,9 @@ LLM model
 temperature
 timeouts
 token limits
+answer default limit
+answer max context size
+debug prompt behavior
 ```
 
 Generic services must not reference provider-specific configuration names such as `QDRANT_COLLECTION_NAME`, `QDRANT_VECTOR_SIZE`, or `QDRANT_DISTANCE`.
@@ -360,7 +386,8 @@ ragforge/
 │   │           ├── branch-14-llm-factory.md
 │   │           ├── branch-15-vector-db-factory-qdrant.md
 │   │           ├── branch-16-embeddings-indexing.md
-│   │           └── branch-17-semantic-search.md
+│   │           ├── branch-17-semantic-search.md
+│   │           └── branch-18-augmented-answers-with-sources.md
 │   ├── setup/
 │   │   └── local-development.md
 │   └── api/
@@ -370,21 +397,26 @@ ragforge/
 ├── scripts/
 │   └── validation/
 │       ├── validate_branch_15_vector_db.py
-│       └── validate_branch_16_indexing.py
-│       └── validate_branch_17_semantic_search.py
+│       ├── validate_branch_16_indexing.py
+│       ├── validate_branch_17_semantic_search.py
+│       └── validate_branch_18_answers.py
+│
 ├── storage/
 │   └── uploads/
 │       └── {project_id}/
 │           └── documents/
 │
 ├── tests/
+│   ├── test_answer_schemas.py
 │   ├── test_embedding_provider_factory.py
 │   ├── test_indexing_schemas.py
 │   ├── test_llm_factory.py
 │   ├── test_llm_service.py
-│   └── test_vector_db_factory.py
+│   ├── test_rag_answer_service.py
+│   ├── test_rag_context_builder.py
 │   ├── test_search_schemas.py
-│   └── test_semantic_search_service.py
+│   ├── test_semantic_search_service.py
+│   └── test_vector_db_factory.py
 │
 └── src/
     └── ragforge/
@@ -394,30 +426,20 @@ ragforge/
         ├── models/
         │   ├── enums/
         │   └── db_schemes/
+        ├── prompts/
+        │   └── rag_answer_prompt.py
         ├── providers/
         │   ├── embedding/
-        │   │   ├── base.py
-        │   │   ├── enums.py
-        │   │   ├── exceptions.py
-        │   │   ├── factory.py
-        │   │   ├── schemas.py
-        │   │   └── implementations/
-        │   │       ├── fake_embedding_provider.py
-        │   │       └── openai_compatible_embedding_provider.py
         │   ├── llm/
         │   └── vector_db/
-        │       ├── base.py
-        │       ├── enums.py
-        │       ├── exceptions.py
-        │       ├── factory.py
-        │       ├── schemas.py
-        │       └── implementations/
-        │           └── qdrant_provider.py
         ├── routes/
+        │   ├── answers.py
         │   ├── documents.py
         │   ├── indexing.py
+        │   ├── llm.py
         │   └── search.py
         ├── schemas/
+        │   ├── answers.py
         │   ├── document_processing.py
         │   ├── indexing.py
         │   └── search.py
@@ -427,8 +449,10 @@ ragforge/
         │   ├── indexing_service.py
         │   ├── llm_service.py
         │   ├── pipeline_service.py
-        │   ├── vector_db_service.py
-        │   └── semantic_search_service.py
+        │   ├── rag_answer_service.py
+        │   ├── rag_context_builder.py
+        │   ├── semantic_search_service.py
+        │   └── vector_db_service.py
         ├── stores/
         │   └── mongodb/
         └── utils/
@@ -482,17 +506,13 @@ Check Qdrant health:
 curl http://localhost:6333/healthz
 ```
 
-Run the Branch 15 vector database validation script:
+Run validation scripts:
 
 ```bash
 python scripts/validation/validate_branch_15_vector_db.py
-```
-
-Run the Branch 16 indexing validation script:
-
-```bash
 python scripts/validation/validate_branch_16_indexing.py
-│       └── validate_branch_17_semantic_search.py
+python scripts/validation/validate_branch_17_semantic_search.py
+python scripts/validation/validate_branch_18_answers.py
 ```
 
 Run tests:
@@ -602,6 +622,81 @@ The fake embedding provider uses deterministic pseudo-vectors, so the score is n
 
 ---
 
+## 🧠 Branch 18 Augmented Answer Endpoint
+
+Branch 18 adds the grounded answer endpoint:
+
+```http
+POST /api/v1/answers/{project_id}
+```
+
+Example request:
+
+```json
+{
+  "question": "What is RAGForge?",
+  "limit": 5,
+  "asset_id": null,
+  "min_score": null,
+  "include_sources": true,
+  "include_evidence": true,
+  "include_debug_prompt": false
+}
+```
+
+Example response:
+
+```json
+{
+  "signal": "rag_answer_success",
+  "message": "Answer generated from retrieved evidence.",
+  "project_id": "project18test",
+  "question": "What is RAGForge?",
+  "answer": "Fake RAGForge response generated successfully. Input preview: Question:\nWhat is RAGForge?\n\nRetrieved sources:\n[Source 1] rank=1...",
+  "sources": [
+    {
+      "source_number": 1,
+      "rank": 1,
+      "score": 0.021401197,
+      "record_id": "6a21d739b5d8264b4c0feeda",
+      "chunk_id": "6a21d739b5d8264b4c0feeda",
+      "asset_id": "6a21d720b5d8264b4c0feed9",
+      "project_id": "6a21d720b5d8264b4c0feed8",
+      "chunk_order": 1,
+      "metadata": {
+        "index_level": "chunk",
+        "indexing_strategy": "simple_chunk",
+        "source_type": "data_chunk",
+        "embedding_model": "fake-embedding-model"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "source_number": 1,
+      "text": "RAGForge is a modular RAG backend...",
+      "score": 0.021401197,
+      "chunk_id": "6a21d739b5d8264b4c0feeda",
+      "asset_id": "6a21d720b5d8264b4c0feed9",
+      "chunk_order": 1,
+      "metadata": {
+        "index_level": "chunk",
+        "indexing_strategy": "simple_chunk",
+        "source_type": "data_chunk",
+        "embedding_model": "fake-embedding-model"
+      }
+    }
+  ],
+  "llm_model": "fake-ragforge-model",
+  "retrieval_count": 1,
+  "debug_prompt": null
+}
+```
+
+The fake LLM provider returns a deterministic fake response for local validation. With a real LLM provider, the same endpoint generates a real grounded answer from retrieved evidence.
+
+---
+
 ## ⚙️ RAG Core Configuration
 
 Generic vector indexing configuration:
@@ -646,6 +741,16 @@ SEARCH_INCLUDE_TEXT_DEFAULT=true
 SEARCH_INCLUDE_METADATA_DEFAULT=true
 ```
 
+RAG answer configuration:
+
+```env
+RAG_ANSWER_DEFAULT_LIMIT=5
+RAG_ANSWER_MAX_CONTEXT_CHARS=8000
+RAG_ANSWER_INCLUDE_SOURCES_DEFAULT=true
+RAG_ANSWER_INCLUDE_EVIDENCE_DEFAULT=true
+RAG_ANSWER_DEBUG_PROMPT_DEFAULT=false
+```
+
 LLM configuration:
 
 ```env
@@ -673,6 +778,8 @@ OPENAI_BASE_URL=""
 | [`docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md`](docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md) | Branch 14 LLM Factory implementation details |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md`](docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md) | Branch 15 Vector DB Factory with Qdrant implementation details |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md`](docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md) | Branch 16 Embeddings & Indexing Foundation implementation details |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md`](docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md) | Branch 17 Semantic Search implementation details |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md`](docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md) | Branch 18 Augmented Answers with Sources implementation details |
 | [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
 | [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 
@@ -702,6 +809,8 @@ Branch 14 → LLM Factory
 Branch 15 → Vector DB Factory with Qdrant
 Branch 16 → Embeddings & Indexing Foundation
 Branch 17 → Semantic Search
+Branch 18 → Augmented Answers with Sources
+Branch 19 → RAG Core Stabilization
 ```
 
 Documentation rule:
@@ -751,13 +860,17 @@ RAGForge follows these principles:
 - treat metadata as a first-class part of modern RAG architecture
 - link every chunk to its source asset for traceability and future citations
 - return source-ready evidence before answer generation
+- generate grounded answers only from retrieved evidence
+- keep answer generation separate from retrieval
+- keep prompt construction separate from orchestration
+- hide debug prompts by default
 - keep pipeline orchestration reusable for future workers and agentic layers
 
 ---
 
 ## ✅ Current Stable Backend Capability
 
-At the end of Branch 17, RAGForge can:
+At the end of Branch 18, RAGForge can:
 
 ```text
 Upload document
@@ -781,6 +894,12 @@ Mark chunks as embedded
 Search indexed vectors by user query
   ↓
 Return ranked evidence chunks with source metadata
+  ↓
+Build source-numbered context
+  ↓
+Generate a grounded answer through LLMService
+  ↓
+Return answer, sources, evidence, model, and retrieval count
 ```
 
 RAGForge also has:
@@ -826,28 +945,18 @@ Qdrant vector indexing
 And now:
 
 ```text
+RAGAnswerService
+  ↓
 SemanticSearchService
   ↓
-Query embedding
+RAGContextBuilder
   ↓
-VectorDBService search
+RAG prompt builder
   ↓
-Ranked source-ready evidence
+LLMService
+  ↓
+Grounded answer with structured sources
 ```
-
-Branch 17 validates:
-
-- document upload,
-- document processing,
-- chunk persistence,
-- embedding generation with fake provider,
-- vector indexing into Qdrant,
-- semantic search over indexed vectors,
-- source-ready evidence response,
-- chunk/asset/project metadata preservation,
-- provider-neutral service architecture,
-- no hidden `getattr(settings, ...)` fallback in providers/services/routes,
-- no Qdrant-specific configuration leakage into services/routes.
 
 Supported `/process/{project_id}` modes from the ingestion pipeline:
 
@@ -857,36 +966,57 @@ single_asset_by_id
 single_asset_by_filename
 ```
 
-This prepares RAGForge for Branch 18, where retrieved evidence will be used to generate grounded answers with sources.
+Supported RAG Core endpoints now include:
+
+```text
+POST /api/v1/llm/generate
+POST /api/v1/indexing/{project_id}
+POST /api/v1/search/{project_id}
+POST /api/v1/answers/{project_id}
+```
 
 ---
 
-## ✅ Branch 17 Validation Result
+## ✅ Branch 18 Validation Result
+
+Branch 18 validation confirms:
 
 ```text
-20 passed
-Branch 16 indexing validation passed
-Branch 17 semantic search validation passed
+30 passed
+Branch 18 answer validation passed
+```
+
+The validated end-to-end test flow was:
+
+```text
+Upload
+  ↓
+Process
+  ↓
+Index
+  ↓
+Answer
+```
+
+The answer response includes:
+
+```text
+rag_answer_success
+answer
+sources
+evidence
+llm_model
+retrieval_count
+debug_prompt = null by default
 ```
 
 Architecture audit:
 
 ```text
-No Qdrant-specific config leakage in services/routes.
-No hidden settings fallback in providers/services/routes.
-```
-
-Branch 17 evidence result includes:
-
-```text
-record_id
-chunk_id
-asset_id
-project_id
-chunk_order
-text
-metadata
-source
+No controller pattern added.
+No direct vector database coupling in the answer route/service.
+No direct concrete LLM provider coupling in the answer route/service.
+No hidden settings fallback in the new Branch 18 service path.
 ```
 
 ---
