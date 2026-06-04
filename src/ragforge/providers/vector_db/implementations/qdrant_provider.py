@@ -20,13 +20,8 @@ class QdrantProvider(BaseVectorDBProvider):
     """
     Qdrant implementation of the vector database provider interface.
 
-    Branch 15 responsibility:
-    - connect to Qdrant
-    - create/delete/list collections
-    - insert fake/manual vectors
-    - search by vector primitive
-
-    Branch 15 does NOT generate embeddings and does NOT index MongoDB chunks.
+    This provider is the only place where Qdrant-specific client logic should
+    exist. Services must use VectorDBService instead of calling Qdrant directly.
     """
 
     def __init__(
@@ -45,6 +40,13 @@ class QdrantProvider(BaseVectorDBProvider):
         self.client: QdrantClient | None = None
 
     def connect(self) -> None:
+        """
+        Connect to Qdrant using the configured mode.
+
+        Supported modes:
+        - local: embedded/local Qdrant storage
+        - server: remote or Docker Qdrant server
+        """
         if self.mode == QdrantMode.LOCAL.value:
             Path(self.local_path).mkdir(parents=True, exist_ok=True)
             self.client = QdrantClient(path=self.local_path)
@@ -63,16 +65,29 @@ class QdrantProvider(BaseVectorDBProvider):
         )
 
     def disconnect(self) -> None:
+        """
+        Disconnect the provider client.
+
+        QdrantClient does not require an explicit network close for the current
+        use case, so we remove the client reference.
+        """
         self.client = None
 
     def _get_client(self) -> QdrantClient:
+        """
+        Return the active Qdrant client or fail clearly if not connected.
+        """
         if self.client is None:
             raise VectorDBProviderError(
                 'Qdrant client is not connected. Call connect() first.'
             )
+
         return self.client
 
     def _distance(self, distance: str) -> models.Distance:
+        """
+        Map RAGForge distance enum values to Qdrant distance values.
+        """
         mapping = {
             DistanceMethod.COSINE.value: models.Distance.COSINE,
             DistanceMethod.DOT.value: models.Distance.DOT,
@@ -88,11 +103,14 @@ class QdrantProvider(BaseVectorDBProvider):
 
     def _normalize_point_id(self, record_id: str | int | None) -> str | int:
         """
-        Qdrant point IDs are integer IDs or UUID strings.
+        Normalize RAGForge record IDs into Qdrant-compatible point IDs.
 
-        MongoDB ObjectId strings are not UUID strings, so we convert any
-        arbitrary string into a stable UUIDv5 and keep the original ID inside
-        the payload as 'record_id'.
+        Qdrant point IDs must be integers or UUID strings. MongoDB ObjectId
+        strings are not UUID strings, so arbitrary string IDs are converted into
+        stable UUIDv5 values.
+
+        The original RAGForge record ID is preserved inside the payload as
+        `record_id` so search results can still return the real chunk/vector ID.
         """
         if record_id is None:
             return str(uuid5(NAMESPACE_URL, 'ragforge-auto-generated-id'))
@@ -107,6 +125,17 @@ class QdrantProvider(BaseVectorDBProvider):
             return str(uuid5(NAMESPACE_URL, str(record_id)))
 
     def _build_payload(self, record: VectorRecord) -> dict[str, Any]:
+        """
+        Build a Qdrant payload from a VectorRecord.
+
+        Payload strategy:
+        - metadata is stored flat at the top level to make filtering simple;
+        - text is stored as a top-level field;
+        - original record_id is stored as a top-level field.
+
+        This allows Branch 17 to filter by project_id / asset_id and still
+        rebuild source metadata for Branch 18 citations.
+        """
         payload = dict(record.metadata or {})
         payload['text'] = record.text
 
@@ -116,6 +145,12 @@ class QdrantProvider(BaseVectorDBProvider):
         return payload
 
     def _build_filter(self, filters: dict | None) -> models.Filter | None:
+        """
+        Build a Qdrant metadata filter from a simple dictionary.
+
+        Example:
+        {'project_id': '...', 'asset_id': '...'}
+        """
         if not filters:
             return None
 
@@ -244,6 +279,18 @@ class QdrantProvider(BaseVectorDBProvider):
         limit: int = 10,
         filters: dict | None = None,
     ) -> list[VectorSearchResult]:
+        """
+        Search vectors by query vector and return provider-neutral results.
+
+        Important:
+        `_build_payload()` stores metadata flat at Qdrant payload level.
+        Therefore, search result normalization must rebuild metadata by removing
+        internal fields: `text` and `record_id`.
+
+        This is what makes Branch 17 source-ready for Branch 18:
+        search results now expose chunk_id, asset_id, project_id, chunk_order,
+        and all other metadata needed for citations.
+        """
         client = self._get_client()
 
         query_response = client.query_points(
@@ -261,6 +308,7 @@ class QdrantProvider(BaseVectorDBProvider):
 
         for point in points:
             payload = point.payload or {}
+
             text = payload.get('text')
             record_id = payload.get('record_id', point.id)
 
@@ -273,48 +321,10 @@ class QdrantProvider(BaseVectorDBProvider):
             normalized_results.append(
                 VectorSearchResult(
                     record_id=record_id,
-                    score=point.score,
+                    score=float(point.score),
                     text=text,
                     metadata=metadata,
                 )
             )
 
         return normalized_results
-    
-    
-    
-    
-    
-    
-    
-
-    
-    
-    
-    
-    
-    
-
-    
-
-    
-    
-    
-    
-
-    
-    
-    
-    
-    
-
-    
-    
-    
-    
-    
-    
-    
-    
-
-    

@@ -100,6 +100,13 @@ class Settings(BaseSettings):
     VECTOR_DB_VECTOR_SIZE: int = 1536
     VECTOR_DB_DISTANCE: str = 'cosine'
 
+    # Semantic search settings.
+    SEARCH_DEFAULT_LIMIT: int = 5
+    SEARCH_MAX_LIMIT: int = 20
+    SEARCH_MIN_SCORE: float | None = None
+    SEARCH_INCLUDE_TEXT_DEFAULT: bool = True
+    SEARCH_INCLUDE_METADATA_DEFAULT: bool = True
+
     # Root upload directory.
     # All uploaded files will be stored inside this folder.
     UPLOAD_DIR: str = 'storage/uploads'
