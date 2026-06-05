@@ -17,6 +17,8 @@ services:
       - ragforge-network
 
     restart: always
+
+
   qdrant:
     image: qdrant/qdrant
     container_name: ragforge-qdrant
@@ -29,9 +31,29 @@ services:
       - ragforge-network
     restart: always
 
+  postgres:
+    platform: linux/amd64
+    image: pgvector/pgvector:0.8.0-pg17
+    container_name: ragforge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - ragforge_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   ragforge-network:
 
 volumes:
   ragforge_mongodb_data:
   ragforge_qdrant_data:
+  ragforge_postgres_data:

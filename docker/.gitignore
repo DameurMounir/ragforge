@@ -7,3 +7,6 @@ mongodb/
 
 # Optional Qdrant bind-mount storage if used later
 docker/ragforge_qdrant_data/
+
+#for postgres
+docker/ragforge_postgres_data/
