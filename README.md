@@ -2,7 +2,7 @@
 
 **RAGForge** is a production-oriented **Retrieval-Augmented Generation (RAG)** backend platform built step by step with real software engineering practices.
 
-The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, project-based storage, metadata management, text extraction, chunking, LLM integration, vector databases, embeddings, indexing, semantic search, grounded answer generation, background workers, observability, security, and production deployment.
+The project starts from a clean FastAPI backend and progressively evolves toward document ingestion, project-based storage, metadata management, text extraction, chunking, LLM integration, vector databases, embeddings, indexing, semantic search, grounded answer generation, production persistence, background workers, observability, security, and production deployment.
 
 RAGForge is not a notebook demo. It is designed as a long-term AI engineering project focused on building a clean, scalable, and professional backend architecture.
 
@@ -26,7 +26,7 @@ What is becoming obsolete is **naive RAG**: systems that only split documents in
 
 RAGForge follows a more modern **knowledge-oriented RAG direction**.
 
-The goal is to evolve from simple document retrieval toward a production-grade knowledge backend where every source is tracked as an asset, every extracted chunk is linked to its origin, metadata is persisted, vectors are indexed, semantic search returns source-ready evidence, and grounded answers can be generated with structured sources.
+The goal is to evolve from simple document retrieval toward a production-grade knowledge backend where every source is tracked as an asset, every extracted chunk is linked to its origin, metadata is persisted, vectors are indexed, semantic search returns source-ready evidence, grounded answers can be generated with structured sources, and production persistence can evolve safely through migrations.
 
 The current architectural direction is:
 
@@ -44,6 +44,8 @@ Vector Indexing
 Semantic Search
   ↓
 Grounded / Augmented Answer with Sources
+  ↓
+Production Persistence / Workers / Observability
 ```
 
 This makes RAGForge more than a basic RAG demo. It is designed as a foundation for structured knowledge systems that can later support applications, websites, internal tools, and agentic AI workflows.
@@ -58,8 +60,8 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 | M2 | ⚙️ FastAPI Backend Foundation | Running FastAPI app with structured routes, environment configuration, and health check |
 | M3 | 📄 Document Upload & Processing Foundation | Upload endpoint, file validation, project-based storage, and document processing foundation |
 | M4 | 🗄️ Database Metadata, Indexing & Ingestion Pipeline | MongoDB metadata layer, asset schemas, stores, indexes, upload metadata persistence, processing metadata persistence, and stable ingestion pipeline |
-| M5 | 🔎 RAG Core: LLM, Vector Store & Retrieval | LLM factory, vector database factory, embeddings, indexing, semantic search, retrieval, and grounded answer generation |
-| M6 | 🐳 Production Deployment & Workers | Docker deployment, PostgreSQL/PgVector evolution, Redis, Celery workers, schedulers, and production runtime setup |
+| M5 | 🔎 RAG Core: LLM, Vector Store & Retrieval | LLM factory, vector database factory, embeddings, indexing, semantic search, retrieval, grounded answer generation, citation validation, and RAG Core stabilization |
+| M6 | 🐳 Production Deployment & Workers | PostgreSQL/PgVector evolution, SQLAlchemy, Alembic, Docker deployment, Redis, Celery workers, schedulers, and production runtime setup |
 | M7 | 🛡️ Observability, Security & Agent-Ready Evolution | Monitoring, structured logs, evaluation, security hardening, and preparation for agentic system integration |
 
 ---
@@ -68,96 +70,74 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 
 ### Current Milestone
 
-Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
+Milestone 6 — Production Deployment & Workers
 
 ### Latest Completed Branch
 
-Branch 19 — RAG Core Stabilization
+Branch 20 — PostgreSQL + SQLAlchemy + Alembic Production Layer
 
 Git branch:
 
 ```text
-feature/19-rag-core-stabilization
+feature/20-postgres-sqlalchemy-alembic-production-layer
 ```
 
-Branch 19 stabilizes the full RAG Core v1 flow introduced across Branches 14 to 18.
+Branch 20 starts the production persistence evolution after the stabilized RAG Core v1 release.
 
-It improves the grounded answer pipeline by adding retrieval post-processing, stronger source control, retrieval diagnostics, citation validation, warnings, and response stability fields.
+It introduces a PostgreSQL production metadata foundation using SQLAlchemy async ORM, Alembic migrations, a session manager, repository classes, ORM-to-domain record mappers, and a Unit of Work transaction boundary.
 
-The stabilized Branch 19 answer flow is:
+Branch 20 does not replace the full MongoDB ingestion path yet. It prepares a production-grade relational persistence foundation that later branches can connect to ingestion, indexing, workers, PgVector-powered retrieval, and deployment workflows.
+
+The Branch 20 production persistence flow is:
 
 ```text
-Question
+Application / Service Layer
   ↓
-SemanticSearchService
+PostgresSessionManager
   ↓
-Candidate ranked evidence chunks
+PostgresUnitOfWork
   ↓
-RetrievalPostprocessor
+ProjectRepository / AssetRepository / ChunkRepository
   ↓
-Filtered / deduplicated / source-controlled evidence
+Domain Records
   ↓
-RAGContextBuilder
+SQLAlchemy ORM Models
   ↓
-RAG prompt builder
+Alembic Migration
   ↓
-LLMService
-  ↓
-CitationValidator
-  ↓
-Grounded answer with sources, evidence, warnings, and diagnostics
+PostgreSQL / PgVector
 ```
 
-Branch 19 adds and stabilizes:
+Branch 20 adds and validates:
 
-- retrieval post-processing before prompt construction,
-- candidate retrieval limit separate from final answer limit,
-- minimum score filtering at the answer layer,
-- maximum chunks per asset control,
-- source deduplication,
-- dominant asset control for focused answer generation,
-- citation validation and citation sanitization,
-- `warnings` response field,
-- `retrieval_diagnostics` response field,
-- `citation_validation` response field,
-- safer answer responses when retrieval or LLM generation fails,
-- stronger answer schema compatibility after Branch 18,
-- improved tests for retrieval post-processing, citation validation, answer schemas, context building, and answer service orchestration,
-- Branch 19 validation script,
-- README, endpoint, and milestone documentation refresh.
-
-Branch 19 validates that RAGForge can now run a stabilized RAG Core v1 pipeline:
-
-```text
-Upload document
-  ↓
-Process document
-  ↓
-Persist chunks in MongoDB
-  ↓
-Index chunk embeddings into Qdrant
-  ↓
-Search indexed vectors
-  ↓
-Post-process retrieved evidence
-  ↓
-Build source-numbered context
-  ↓
-Generate a grounded answer
-  ↓
-Validate and sanitize citations
-  ↓
-Return answer + sources + evidence + diagnostics
-```
+- PostgreSQL Docker service with PgVector support,
+- PostgreSQL environment configuration,
+- SQLAlchemy async session manager,
+- safe PostgreSQL URL builders shared by runtime and Alembic,
+- Alembic migration environment,
+- first production metadata migration,
+- project, asset, and data chunk ORM models,
+- server-side UUID defaults,
+- repository layer without internal commits,
+- Unit of Work layer owning commit and rollback,
+- ORM-to-domain record mappers,
+- project, asset, and chunk repository protocols,
+- atomic chunk replacement,
+- technical uniqueness for `stored_filename`, `storage_path`, and `vector_record_id`,
+- database constraints for metadata integrity,
+- Branch 20 validation scripts,
+- architecture tests for transaction policy, model identity, URL builders, repository contracts, and package hygiene.
 
 ### Next Focus
 
-Milestone 6 — Production Deployment & Workers
+Continue Milestone 6 by connecting the production persistence foundation to the wider runtime path.
 
-The next development focus is to move from a stabilized local RAG Core toward production runtime readiness:
+The next development focus is:
 
-- Docker runtime hardening,
-- production configuration cleanup,
+- production runtime hardening,
+- stronger Docker environment consistency,
+- relational metadata integration,
+- PgVector evolution,
 - worker-oriented processing,
 - background indexing and ingestion,
 - local/demo deployment readiness,
@@ -166,17 +146,25 @@ The next development focus is to move from a stabilized local RAG Core toward pr
 
 ---
 
-## Documentation Map Entries
+## 📚 Documentation Map Entries
 
 | Document | Purpose |
 |---|---|
+| [`docs/architecture/backend-architecture.md`](docs/architecture/backend-architecture.md) | Stable backend architecture and long-term design principles |
+| [`docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md) | Milestone 4 metadata and ingestion pipeline overview |
+| [`docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md) | Branch 13 implementation details and validation |
 | [`docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md`](docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md) | Milestone 5 RAG Core overview |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md`](docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md) | Branch 14 LLM Factory implementation notes |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md`](docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md) | Branch 15 Vector DB Factory with Qdrant implementation notes |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md`](docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md) | Branch 16 Embeddings & Indexing Foundation implementation notes |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md`](docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md) | Branch 17 Semantic Search implementation notes |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md`](docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md) | Branch 18 Augmented Answers with Sources implementation notes |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md`](docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md) | Branch 19 RAG Core Stabilization implementation notes |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md`](docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md) | Branch 14 LLM Factory implementation details |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md`](docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md) | Branch 15 Vector DB Factory with Qdrant implementation details |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md`](docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md) | Branch 16 Embeddings & Indexing Foundation implementation details |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md`](docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md) | Branch 17 Semantic Search implementation details |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md`](docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md) | Branch 18 Augmented Answers with Sources implementation details |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md`](docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md) | Branch 19 RAG Core Stabilization implementation details |
+| [`docs/milestones/milestone-06-production-deployment-workers/milestone-06-production-deployment-workers.md`](docs/milestones/milestone-06-production-deployment-workers/milestone-06-production-deployment-workers.md) | Milestone 6 Production Deployment & Workers overview |
+| [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md) | Branch 20 PostgreSQL + SQLAlchemy + Alembic production layer implementation details |
+| [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
+| [`docs/setup/postgres-alembic.md`](docs/setup/postgres-alembic.md) | PostgreSQL and Alembic setup and validation notes |
+| [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
 
 ---
 
@@ -283,25 +271,7 @@ Vector DB Provider
 Ranked Evidence
 ```
 
-After Branch 18, the grounded answer path is:
-
-```text
-Answers Route
-  ↓
-RAGAnswerService
-  ↓
-SemanticSearchService
-  ↓
-RAGContextBuilder
-  ↓
-RAG Prompt Builder
-  ↓
-LLMService
-  ↓
-Answer + Sources + Evidence
-```
-
-After Branch 19, the answer path is stabilized with retrieval post-processing and citation validation:
+After Branch 18 and Branch 19, the grounded answer path is stabilized with retrieval post-processing and citation validation:
 
 ```text
 Answers Route
@@ -323,7 +293,25 @@ CitationValidator
 Answer + Sources + Evidence + Warnings + Diagnostics
 ```
 
-The route stays thin. The orchestration lives in the service layer. Provider-specific implementation details stay behind interfaces.
+After Branch 20, the production persistence foundation adds PostgreSQL, SQLAlchemy async ORM, Alembic migrations, repositories, domain records, and a Unit of Work transaction boundary:
+
+```text
+Application / Service Layer
+  ↓
+PostgresSessionManager
+  ↓
+PostgresUnitOfWork
+  ↓
+ProjectRepository / AssetRepository / ChunkRepository
+  ↓
+Domain Records
+  ↓
+SQLAlchemy ORM Models
+  ↓
+PostgreSQL / PgVector
+```
+
+The route stays thin. The orchestration lives in the service layer. Provider-specific implementation details stay behind interfaces. Transaction ownership stays in the Unit of Work layer, not inside repositories.
 
 Full architecture reference:
 
@@ -344,7 +332,7 @@ settings
   ↓
 factory/service
   ↓
-provider
+provider / infrastructure boundary
 ```
 
 Runtime operational values must not be hidden inside services, routes, or provider factories.
@@ -385,13 +373,16 @@ token limits
 answer default limit
 answer max context size
 debug prompt behavior
+PostgreSQL host / port / credentials / pool settings
 ```
 
 Generic services must not reference provider-specific configuration names such as `QDRANT_COLLECTION_NAME`, `QDRANT_VECTOR_SIZE`, or `QDRANT_DISTANCE`.
 
 Provider-specific settings are allowed only at provider boundaries, such as the provider factory and provider implementation.
 
-This keeps RAGForge provider-neutral, testable, and ready for future backends such as Qdrant, pgvector, Weaviate, Milvus, Pinecone, or another vector database.
+Database-specific behavior is allowed at database infrastructure boundaries, such as PostgreSQL session management, SQLAlchemy models, repositories, and Alembic migrations.
+
+This keeps RAGForge provider-aware at the boundaries, testable, and ready for future backends such as Qdrant, pgvector, Weaviate, Milvus, Pinecone, or another vector database.
 
 ---
 
@@ -402,11 +393,18 @@ ragforge/
 ├── README.md
 ├── LICENSE
 ├── requirements.txt
+├── alembic.ini
 ├── .env.example
 ├── .gitignore
 │
 ├── docker/
 │   └── docker-compose.yml
+│
+├── migrations/
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/
+│       └── 20260605_0001_create_postgres_metadata_schema.py
 │
 ├── docs/
 │   ├── architecture/
@@ -414,17 +412,22 @@ ragforge/
 │   ├── milestones/
 │   │   ├── milestone-03-document-upload/
 │   │   ├── milestone-04-database-metadata-indexing/
-│   │   └── milestone-05-rag-core/
-│   │       ├── milestone-05-rag-core.md
+│   │   ├── milestone-05-rag-core/
+│   │   │   ├── milestone-05-rag-core.md
+│   │   │   └── branches/
+│   │   │       ├── branch-14-llm-factory.md
+│   │   │       ├── branch-15-vector-db-factory-qdrant.md
+│   │   │       ├── branch-16-embeddings-indexing.md
+│   │   │       ├── branch-17-semantic-search.md
+│   │   │       ├── branch-18-augmented-answers-with-sources.md
+│   │   │       └── branch-19-rag-core-stabilization.md
+│   │   └── milestone-06-production-deployment-workers/
+│   │       ├── milestone-06-production-deployment-workers.md
 │   │       └── branches/
-│   │           ├── branch-14-llm-factory.md
-│   │           ├── branch-15-vector-db-factory-qdrant.md
-│   │           ├── branch-16-embeddings-indexing.md
-│   │           ├── branch-17-semantic-search.md
-│   │           ├── branch-18-augmented-answers-with-sources.md
-│   │           └── branch-19-rag-core-stabilization.md
+│   │           └── branch-20-postgres-sqlalchemy-alembic-production-layer.md
 │   ├── setup/
-│   │   └── local-development.md
+│   │   ├── local-development.md
+│   │   └── postgres-alembic.md
 │   └── api/
 │       └── endpoints.md
 │
@@ -435,7 +438,9 @@ ragforge/
 │       ├── validate_branch_16_indexing.py
 │       ├── validate_branch_17_semantic_search.py
 │       ├── validate_branch_18_answers.py
-│       └── validate_branch_19_rag_core_stabilization.py
+│       ├── validate_branch_19_rag_core_stabilization.py
+│       ├── validate_branch_20_alembic_state.py
+│       └── validate_branch_20_postgres_production_layer.py
 │
 ├── storage/
 │   └── uploads/
@@ -450,11 +455,18 @@ ragforge/
 │   ├── test_llm_service.py
 │   ├── test_citation_validator.py
 │   ├── test_rag_answer_service.py
+│   ├── test_rag_answer_service_stability.py
 │   ├── test_rag_context_builder.py
 │   ├── test_retrieval_postprocessor.py
 │   ├── test_search_schemas.py
 │   ├── test_semantic_search_service.py
-│   └── test_vector_db_factory.py
+│   ├── test_vector_db_factory.py
+│   ├── test_postgres_model_identity.py
+│   ├── test_postgres_package_hygiene.py
+│   ├── test_postgres_protocols_do_not_return_orm_tables.py
+│   ├── test_postgres_repository_transaction_policy.py
+│   ├── test_postgres_unit_of_work_policy.py
+│   └── test_postgres_url_builders.py
 │
 └── src/
     └── ragforge/
@@ -492,7 +504,13 @@ ragforge/
         │   ├── semantic_search_service.py
         │   └── vector_db_service.py
         ├── stores/
-        │   └── mongodb/
+        │   ├── mongodb/
+        │   └── postgres/
+        │       ├── session.py
+        │       ├── unit_of_work.py
+        │       ├── records.py
+        │       ├── models/
+        │       └── repositories/
         └── utils/
 ```
 
@@ -520,13 +538,17 @@ Local setup, environment preparation, installation commands, and run instruction
 
 [`docs/setup/local-development.md`](docs/setup/local-development.md)
 
+PostgreSQL and Alembic setup details are documented here:
+
+[`docs/setup/postgres-alembic.md`](docs/setup/postgres-alembic.md)
+
 Quick run command:
 
 ```bash
 uvicorn src.ragforge.main:app --reload --reload-dir src --host 127.0.0.1 --port 8000
 ```
 
-MongoDB and Qdrant are launched through the Docker Compose file inside the `docker/` directory:
+MongoDB, Qdrant, and PostgreSQL/PgVector are launched through the Docker Compose file inside the `docker/` directory:
 
 ```bash
 docker compose --env-file .env -f docker/docker-compose.yml up -d
@@ -544,6 +566,21 @@ Check Qdrant health:
 curl http://localhost:6333/healthz
 ```
 
+Check PostgreSQL and PgVector:
+
+```bash
+docker exec -it ragforge-postgres psql -U ragforge -d ragforge -c "SELECT version();"
+docker exec -it ragforge-postgres psql -U ragforge -d ragforge -c "CREATE EXTENSION IF NOT EXISTS vector;"
+docker exec -it ragforge-postgres psql -U ragforge -d ragforge -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
+```
+
+Run Alembic migrations:
+
+```bash
+alembic -c alembic.ini upgrade head
+alembic -c alembic.ini current
+```
+
 Run validation scripts:
 
 ```bash
@@ -552,6 +589,8 @@ python scripts/validation/validate_branch_16_indexing.py
 python scripts/validation/validate_branch_17_semantic_search.py
 python scripts/validation/validate_branch_18_answers.py
 python scripts/validation/validate_branch_19_rag_core_stabilization.py
+python scripts/validation/validate_branch_20_alembic_state.py
+python scripts/validation/validate_branch_20_postgres_production_layer.py
 ```
 
 Run tests:
@@ -562,9 +601,9 @@ pytest
 
 ---
 
-## 🔎 Branch 16 Indexing Endpoint
+## 🔎 RAG Core Endpoints
 
-Branch 16 adds the indexing endpoint:
+### Indexing Endpoint
 
 ```http
 POST /api/v1/indexing/{project_id}
@@ -584,29 +623,7 @@ Example request:
 }
 ```
 
-Example response:
-
-```json
-{
-  "signal": "indexing_success",
-  "message": "Indexing completed.",
-  "project_id": "project16test",
-  "asset_id": null,
-  "strategy": "simple_chunk",
-  "granularity": "chunk",
-  "collection_name": "ragforge_chunks",
-  "embedding_model": "fake-embedding-model",
-  "indexed_chunks": 1,
-  "failed_chunks": 0,
-  "skipped_chunks": 0
-}
-```
-
----
-
-## 🔍 Branch 17 Semantic Search Endpoint
-
-Branch 17 adds the semantic search endpoint:
+### Semantic Search Endpoint
 
 ```http
 POST /api/v1/search/{project_id}
@@ -625,43 +642,9 @@ Example request:
 }
 ```
 
-Example response:
-
-```json
-{
-  "signal": "semantic_search_success",
-  "message": "Semantic search completed.",
-  "project_id": "project16test",
-  "query": "indexing pipeline fake embedding Qdrant",
-  "collection_name": "ragforge_chunks",
-  "embedding_model": "fake-embedding-model",
-  "total_results": 1,
-  "results": [
-    {
-      "rank": 1,
-      "score": -0.045289338,
-      "record_id": "6a2053a1c374e1d233e0e76b",
-      "chunk_id": "6a2053a1c374e1d233e0e76b",
-      "asset_id": "6a20538ec374e1d233e0e76a",
-      "project_id": "6a20538ec374e1d233e0e769",
-      "chunk_order": 1,
-      "text": "RAGForge Branch 16 validates the indexing pipeline...",
-      "metadata": {
-        "index_level": "chunk",
-        "indexing_strategy": "simple_chunk",
-        "source_type": "data_chunk",
-        "embedding_model": "fake-embedding-model"
-      }
-    }
-  ]
-}
-```
-
 The fake embedding provider uses deterministic pseudo-vectors, so the score is not expected to behave like a real semantic embedding score. With real embedding providers, the score becomes semantically meaningful.
 
----
-
-## 🧠 Branch 18/19 Stabilized Answer Endpoint
+### Stabilized Answer Endpoint
 
 Branch 18 introduced the grounded answer endpoint, and Branch 19 stabilizes its retrieval and citation behavior:
 
@@ -683,70 +666,59 @@ Example request:
 }
 ```
 
-Example stabilized response:
+The answer endpoint returns:
 
-```json
-{
-  "signal": "rag_answer_success",
-  "message": "Answer generated from retrieved evidence.",
-  "project_id": "project19test",
-  "question": "What is RAGForge?",
-  "answer": "RAGForge is a modular RAG backend that ingests documents, indexes chunks into a vector database, retrieves relevant evidence, and generates grounded answers with source references.",
-  "sources": [
-    {
-      "source_number": 1,
-      "rank": 1,
-      "score": 0.021401197,
-      "record_id": "6a21d739b5d8264b4c0feeda",
-      "chunk_id": "6a21d739b5d8264b4c0feeda",
-      "asset_id": "6a21d720b5d8264b4c0feed9",
-      "project_id": "6a21d720b5d8264b4c0feed8",
-      "chunk_order": 1,
-      "metadata": {
-        "index_level": "chunk",
-        "indexing_strategy": "simple_chunk",
-        "source_type": "data_chunk",
-        "embedding_model": "fake-embedding-model"
-      }
-    }
-  ],
-  "evidence": [
-    {
-      "source_number": 1,
-      "text": "RAGForge is a modular RAG backend...",
-      "score": 0.021401197,
-      "chunk_id": "6a21d739b5d8264b4c0feeda",
-      "asset_id": "6a21d720b5d8264b4c0feed9",
-      "chunk_order": 1,
-      "metadata": {
-        "index_level": "chunk",
-        "indexing_strategy": "simple_chunk",
-        "source_type": "data_chunk",
-        "embedding_model": "fake-embedding-model"
-      }
-    }
-  ],
-  "llm_model": "fake-ragforge-model",
-  "retrieval_count": 1,
-  "debug_prompt": null,
-  "warnings": [],
-  "retrieval_diagnostics": {
-    "raw_count": 5,
-    "after_min_score_count": 3,
-    "after_dedup_count": 2,
-    "final_count": 1
-  },
-  "citation_validation": {
-    "valid_source_numbers": [1],
-    "invalid_source_numbers": [],
-    "was_sanitized": false
-  }
-}
+```text
+rag_answer_success
+answer
+sources
+evidence
+llm_model
+retrieval_count
+debug_prompt
+warnings
+retrieval_diagnostics
+citation_validation
 ```
 
 The fake LLM provider returns a deterministic fake response for local validation. With a real OpenAI-compatible provider, the same endpoint generates a real grounded answer from retrieved evidence.
 
 Branch 19 keeps debug prompts hidden by default and adds response stability fields so clients can inspect retrieval behavior and citation safety without changing the public endpoint.
+
+---
+
+## 🐘 PostgreSQL / PgVector Configuration
+
+Branch 20 introduces PostgreSQL as the production persistence foundation and PgVector as the future vector-capable relational database layer.
+
+```env
+POSTGRES_USER=ragforge
+POSTGRES_PASSWORD=ragforge_password_change_me
+POSTGRES_DB=ragforge
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5433
+POSTGRES_ECHO=false
+POSTGRES_POOL_SIZE=5
+POSTGRES_MAX_OVERFLOW=10
+POSTGRES_POOL_TIMEOUT=30
+POSTGRES_POOL_RECYCLE=1800
+```
+
+When the application runs from the host or WSL environment, `POSTGRES_HOST=localhost` and `POSTGRES_PORT=5433` are used.
+
+When the application later runs inside Docker Compose, the internal service name and container port can be used:
+
+```env
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+```
+
+Branch 20 validates PostgreSQL with:
+
+```bash
+python scripts/validation/validate_branch_20_alembic_state.py
+python scripts/validation/validate_branch_20_postgres_production_layer.py
+```
 
 ---
 
@@ -804,7 +776,7 @@ RAG_ANSWER_INCLUDE_EVIDENCE_DEFAULT=true
 RAG_ANSWER_DEBUG_PROMPT_DEFAULT=false
 ```
 
-Branch 19 retrieval stabilization configuration:
+Retrieval stabilization configuration:
 
 ```env
 RAG_RETRIEVAL_CANDIDATE_LIMIT=10
@@ -829,26 +801,6 @@ LLM_TIMEOUT_SECONDS=60
 OPENAI_API_KEY=""
 OPENAI_BASE_URL=""
 ```
-
----
-
-## 📚 Documentation Map
-
-| Document | Purpose |
-|---|---|
-| [`docs/architecture/backend-architecture.md`](docs/architecture/backend-architecture.md) | Stable backend architecture and long-term design principles |
-| [`docs/milestones/`](docs/milestones/) | All milestone overviews, branch plans, and implementation history |
-| [`docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md`](docs/milestones/milestone-04-database-metadata-indexing/milestone-04-database-metadata-indexing.md) | Milestone 4 metadata and ingestion pipeline overview |
-| [`docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md`](docs/milestones/milestone-04-database-metadata-indexing/branches/branch-13-data-pipeline-enhancements.md) | Branch 13 implementation details and validation |
-| [`docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md`](docs/milestones/milestone-05-rag-core/milestone-05-rag-core.md) | Milestone 5 RAG Core overview |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md`](docs/milestones/milestone-05-rag-core/branches/branch-14-llm-factory.md) | Branch 14 LLM Factory implementation details |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md`](docs/milestones/milestone-05-rag-core/branches/branch-15-vector-db-factory-qdrant.md) | Branch 15 Vector DB Factory with Qdrant implementation details |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md`](docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md) | Branch 16 Embeddings & Indexing Foundation implementation details |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md`](docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md) | Branch 17 Semantic Search implementation details |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md`](docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md) | Branch 18 Augmented Answers with Sources implementation details |
-| [`docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md`](docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md) | Branch 19 RAG Core Stabilization implementation details |
-| [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
-| [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 
 ---
 
@@ -878,7 +830,7 @@ Branch 16 → Embeddings & Indexing Foundation
 Branch 17 → Semantic Search
 Branch 18 → Augmented Answers with Sources
 Branch 19 → RAG Core Stabilization
-Branch 20 → Production Deployment Foundation
+Branch 20 → PostgreSQL + SQLAlchemy + Alembic Production Layer
 ```
 
 Documentation rule:
@@ -910,38 +862,42 @@ Branch-specific implementation details should be added to the relevant branch `.
 
 RAGForge follows these principles:
 
-- keep routes thin
-- move business logic to services
-- centralize configuration in `core/config.py`
-- use controlled response signals
-- use provider interfaces for replaceable external systems
-- avoid hidden hardcoded operational values in services and factories
-- keep generic services provider-neutral
-- keep provider-specific settings at provider boundaries
-- keep runtime data outside source code
-- keep uploaded files out of Git
-- do not commit private `.env` files
-- do not expose internal absolute paths
-- keep each branch focused on one responsibility
-- use one branch identifier everywhere: Git branch, issue, PR, and documentation
-- document implementation details in milestone branch files
-- treat metadata as a first-class part of modern RAG architecture
-- link every chunk to its source asset for traceability and future citations
-- return source-ready evidence before answer generation
-- generate grounded answers only from retrieved evidence
-- post-process retrieval before prompt construction
-- validate and sanitize generated citations
-- return retrieval diagnostics for answer observability
-- keep answer generation separate from retrieval
-- keep prompt construction separate from orchestration
-- hide debug prompts by default
-- keep pipeline orchestration reusable for future workers and agentic layers
+- keep routes thin,
+- move business logic to services,
+- centralize configuration in `core/config.py`,
+- use controlled response signals,
+- use provider interfaces for replaceable external systems,
+- avoid hidden hardcoded operational values in services and factories,
+- keep generic services provider-neutral,
+- keep provider-specific settings at provider boundaries,
+- keep database transactions owned by Unit of Work boundaries,
+- keep repositories free from hidden commits,
+- keep ORM models behind domain records when returning data from repository contracts,
+- keep Alembic migrations aligned with ORM models,
+- keep runtime data outside source code,
+- keep uploaded files out of Git,
+- do not commit private `.env` files,
+- do not expose internal absolute paths,
+- keep each branch focused on one responsibility,
+- use one branch identifier everywhere: Git branch, issue, PR, and documentation,
+- document implementation details in milestone branch files,
+- treat metadata as a first-class part of modern RAG architecture,
+- link every chunk to its source asset for traceability and future citations,
+- return source-ready evidence before answer generation,
+- generate grounded answers only from retrieved evidence,
+- post-process retrieval before prompt construction,
+- validate and sanitize generated citations,
+- return retrieval diagnostics for answer observability,
+- keep answer generation separate from retrieval,
+- keep prompt construction separate from orchestration,
+- hide debug prompts by default,
+- keep pipeline orchestration reusable for future workers and agentic layers.
 
 ---
 
 ## ✅ Current Stable Backend Capability
 
-At the end of Branch 19, RAGForge can:
+At the end of Branch 20, RAGForge can:
 
 ```text
 Upload document
@@ -1017,7 +973,7 @@ IndexingService
 Qdrant vector indexing
 ```
 
-And now:
+And:
 
 ```text
 RAGAnswerService
@@ -1035,6 +991,26 @@ LLMService
 CitationValidator
   ↓
 Grounded answer with structured sources, warnings, diagnostics, and citation validation
+```
+
+And Branch 20 adds:
+
+```text
+PostgresSessionManager
+  ↓
+Async SQLAlchemy session factory
+  ↓
+PostgresUnitOfWork
+  ↓
+ProjectRepository / AssetRepository / ChunkRepository
+  ↓
+Domain records
+  ↓
+SQLAlchemy ORM models
+  ↓
+Alembic-managed PostgreSQL schema
+  ↓
+PostgreSQL / PgVector Docker service
 ```
 
 Supported `/process/{project_id}` modes from the ingestion pipeline:
@@ -1115,6 +1091,56 @@ No direct concrete LLM provider coupling in the answer route/service.
 No hidden settings fallback in the Branch 19 answer service path.
 Retrieval post-processing stays isolated from semantic search.
 Citation validation stays isolated from LLM generation.
+```
+
+---
+
+## ✅ Branch 20 Validation Result
+
+Branch 20 validation confirms the PostgreSQL production persistence foundation.
+
+Validated commands:
+
+```bash
+python -m compileall src/ragforge migrations scripts/validation tests
+python scripts/validation/validate_branch_20_alembic_state.py
+python scripts/validation/validate_branch_20_postgres_production_layer.py
+pytest
+```
+
+Validated result:
+
+```text
+Branch 20 Alembic state validation passed.
+Branch 20 PostgreSQL production-layer validation passed.
+47 passed
+```
+
+Branch 20 confirms:
+
+```text
+PostgreSQL / PgVector container runs successfully.
+PgVector extension is available.
+Alembic can upgrade the database to the current head revision.
+The current migration revision is 20260605_0001 (head).
+The PostgreSQL production-layer validation script passes.
+Repository tests confirm repositories do not commit.
+Unit of Work tests confirm commit and rollback ownership.
+Protocol tests confirm repository contracts return domain records, not ORM tables.
+URL builder tests confirm safe runtime and Alembic database URL construction.
+Package hygiene tests confirm cache files are not tracked.
+The full test suite passes.
+```
+
+Architecture audit:
+
+```text
+No transaction ownership hidden inside repositories.
+No ORM table leakage in repository protocols.
+No hardcoded PostgreSQL URL construction in runtime code.
+Runtime and Alembic share the same URL-building logic.
+Alembic migration and ORM models are aligned.
+MongoDB ingestion remains stable while PostgreSQL production persistence is introduced safely.
 ```
 
 ---

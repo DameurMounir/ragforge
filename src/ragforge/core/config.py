@@ -124,6 +124,18 @@ class Settings(BaseSettings):
     RAG_DOMINANT_ASSET_MIN_CHUNKS: int = 2
     RAG_ENABLE_CITATION_VALIDATION: bool = True
 
+    # Branch 20 — PostgreSQL + SQLAlchemy + Alembic Production Persistence Layer
+    POSTGRES_USER: str = 'ragforge'
+    POSTGRES_PASSWORD: str = 'ragforge_password_change_me'
+    POSTGRES_HOST: str = 'localhost'
+    POSTGRES_PORT: int = 5433
+    POSTGRES_DB: str = 'ragforge'
+    POSTGRES_ECHO: bool = False
+    POSTGRES_POOL_SIZE: int = 5
+    POSTGRES_MAX_OVERFLOW: int = 10
+    POSTGRES_POOL_TIMEOUT: int = 30
+    POSTGRES_POOL_RECYCLE: int = 1800
+
     # Root upload directory.
     # All uploaded files will be stored inside this folder.
     UPLOAD_DIR: str = 'storage/uploads'

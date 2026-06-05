@@ -12,6 +12,12 @@ from src.ragforge.routes.search import search_router
 
 from src.ragforge.routes.answers import answers_router
 
+from src.ragforge.stores.postgres.session import (
+    PostgresConnectionSettings,
+    PostgresSessionManager,
+    build_postgres_async_url,
+)
+
 
 app = FastAPI()
 
@@ -26,10 +32,24 @@ async def startup_db_client():
     app.mongodb_client = mongodb_client
     app.db_client = mongodb_client.database
 
+    postgres_connection = PostgresConnectionSettings.from_settings(settings)
+    app.postgres_session_manager = PostgresSessionManager(
+        database_url=build_postgres_async_url(postgres_connection),
+        echo=settings.POSTGRES_ECHO,
+        pool_size=settings.POSTGRES_POOL_SIZE,
+        max_overflow=settings.POSTGRES_MAX_OVERFLOW,
+        pool_timeout=settings.POSTGRES_POOL_TIMEOUT,
+        pool_recycle=settings.POSTGRES_POOL_RECYCLE,
+    )
+    await app.postgres_session_manager.ping()
 
 @app.on_event('shutdown')
 async def shutdown_db_client():
     await app.mongodb_client.close()
+
+    postgres_manager = getattr(app, 'postgres_session_manager', None)
+    if postgres_manager is not None:
+        await postgres_manager.dispose()
 
 
 app.include_router(base_router)

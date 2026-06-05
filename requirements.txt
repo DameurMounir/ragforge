@@ -17,3 +17,9 @@ pytest==9.0.1
 openai==2.38.0
 
 qdrant-client==1.18.0
+
+# Add these dependencies to requirements.txt
+SQLAlchemy[asyncio]==2.0.50
+alembic==1.18.4
+asyncpg==0.31.0
+psycopg[binary]==3.3.4
