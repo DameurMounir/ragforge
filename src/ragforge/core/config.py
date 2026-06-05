@@ -114,6 +114,16 @@ class Settings(BaseSettings):
     RAG_ANSWER_INCLUDE_EVIDENCE_DEFAULT: bool = True
     RAG_ANSWER_DEBUG_PROMPT_DEFAULT: bool = False
 
+    # Branch 19 retrieval quality and citation stability settings.
+    RAG_RETRIEVAL_CANDIDATE_LIMIT: int = 30
+    RAG_RETRIEVAL_MIN_SCORE: float | None = 0.25
+    RAG_MAX_CHUNKS_PER_ASSET: int = 3
+    RAG_ENABLE_SOURCE_DEDUP: bool = True
+    RAG_ENABLE_DOMINANT_ASSET: bool = True
+    RAG_DOMINANT_ASSET_SCORE_GAP: float = 0.08
+    RAG_DOMINANT_ASSET_MIN_CHUNKS: int = 2
+    RAG_ENABLE_CITATION_VALIDATION: bool = True
+
     # Root upload directory.
     # All uploaded files will be stored inside this folder.
     UPLOAD_DIR: str = 'storage/uploads'
