@@ -72,24 +72,30 @@ Milestone 5 — RAG Core: LLM, Vector Store & Retrieval
 
 ### Latest Completed Branch
 
-Branch 18 — Augmented Answers with Sources
+Branch 19 — RAG Core Stabilization
 
 Git branch:
 
 ```text
-feature/18-augmented-answers-with-sources
+feature/19-rag-core-stabilization
 ```
 
-Branch 18 completes the first functional end-to-end RAG Core flow.
+Branch 19 stabilizes the full RAG Core v1 flow introduced across Branches 14 to 18.
 
-It connects semantic search evidence to grounded answer generation:
+It improves the grounded answer pipeline by adding retrieval post-processing, stronger source control, retrieval diagnostics, citation validation, warnings, and response stability fields.
+
+The stabilized Branch 19 answer flow is:
 
 ```text
 Question
   ↓
 SemanticSearchService
   ↓
-Ranked evidence chunks
+Candidate ranked evidence chunks
+  ↓
+RetrievalPostprocessor
+  ↓
+Filtered / deduplicated / source-controlled evidence
   ↓
 RAGContextBuilder
   ↓
@@ -97,28 +103,30 @@ RAG prompt builder
   ↓
 LLMService
   ↓
-Grounded answer with sources
+CitationValidator
+  ↓
+Grounded answer with sources, evidence, warnings, and diagnostics
 ```
 
-It adds:
+Branch 19 adds and stabilizes:
 
-- answer request schema,
-- answer response schema,
-- source schema,
-- evidence schema,
-- `RAGAnswerService`,
-- `RAGContextBuilder`,
-- isolated RAG answer prompt builder,
-- answer route,
-- Branch 18 validation script,
-- answer schema tests,
-- context builder tests,
-- answer service tests,
-- source-aware response structure,
-- debug prompt control,
-- complete answer endpoint validation.
+- retrieval post-processing before prompt construction,
+- candidate retrieval limit separate from final answer limit,
+- minimum score filtering at the answer layer,
+- maximum chunks per asset control,
+- source deduplication,
+- dominant asset control for focused answer generation,
+- citation validation and citation sanitization,
+- `warnings` response field,
+- `retrieval_diagnostics` response field,
+- `citation_validation` response field,
+- safer answer responses when retrieval or LLM generation fails,
+- stronger answer schema compatibility after Branch 18,
+- improved tests for retrieval post-processing, citation validation, answer schemas, context building, and answer service orchestration,
+- Branch 19 validation script,
+- README, endpoint, and milestone documentation refresh.
 
-Branch 18 validates that RAGForge can:
+Branch 19 validates that RAGForge can now run a stabilized RAG Core v1 pipeline:
 
 ```text
 Upload document
@@ -131,27 +139,30 @@ Index chunk embeddings into Qdrant
   ↓
 Search indexed vectors
   ↓
+Post-process retrieved evidence
+  ↓
 Build source-numbered context
   ↓
 Generate a grounded answer
   ↓
-Return answer + sources + evidence
+Validate and sanitize citations
+  ↓
+Return answer + sources + evidence + diagnostics
 ```
 
-### Next Branch
+### Next Focus
 
-Branch 19 — RAG Core Stabilization
+Milestone 6 — Production Deployment & Workers
 
-Branch 19 will stabilize the full RAG Core v1 by improving:
+The next development focus is to move from a stabilized local RAG Core toward production runtime readiness:
 
-- end-to-end validation,
-- error handling,
-- local/demo readiness,
-- documentation consistency,
-- regression testing,
-- API examples,
-- local LLM readiness,
-- professional cleanup before moving toward production deployment.
+- Docker runtime hardening,
+- production configuration cleanup,
+- worker-oriented processing,
+- background indexing and ingestion,
+- local/demo deployment readiness,
+- observability preparation,
+- stronger operational validation.
 
 ---
 
@@ -165,6 +176,7 @@ Branch 19 will stabilize the full RAG Core v1 by improving:
 | [`docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md`](docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md) | Branch 16 Embeddings & Indexing Foundation implementation notes |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md`](docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md) | Branch 17 Semantic Search implementation notes |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md`](docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md) | Branch 18 Augmented Answers with Sources implementation notes |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md`](docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md) | Branch 19 RAG Core Stabilization implementation notes |
 
 ---
 
@@ -289,6 +301,28 @@ LLMService
 Answer + Sources + Evidence
 ```
 
+After Branch 19, the answer path is stabilized with retrieval post-processing and citation validation:
+
+```text
+Answers Route
+  ↓
+RAGAnswerService
+  ↓
+SemanticSearchService
+  ↓
+RetrievalPostprocessor
+  ↓
+RAGContextBuilder
+  ↓
+RAG Prompt Builder
+  ↓
+LLMService
+  ↓
+CitationValidator
+  ↓
+Answer + Sources + Evidence + Warnings + Diagnostics
+```
+
 The route stays thin. The orchestration lives in the service layer. Provider-specific implementation details stay behind interfaces.
 
 Full architecture reference:
@@ -387,7 +421,8 @@ ragforge/
 │   │           ├── branch-15-vector-db-factory-qdrant.md
 │   │           ├── branch-16-embeddings-indexing.md
 │   │           ├── branch-17-semantic-search.md
-│   │           └── branch-18-augmented-answers-with-sources.md
+│   │           ├── branch-18-augmented-answers-with-sources.md
+│   │           └── branch-19-rag-core-stabilization.md
 │   ├── setup/
 │   │   └── local-development.md
 │   └── api/
@@ -399,7 +434,8 @@ ragforge/
 │       ├── validate_branch_15_vector_db.py
 │       ├── validate_branch_16_indexing.py
 │       ├── validate_branch_17_semantic_search.py
-│       └── validate_branch_18_answers.py
+│       ├── validate_branch_18_answers.py
+│       └── validate_branch_19_rag_core_stabilization.py
 │
 ├── storage/
 │   └── uploads/
@@ -412,8 +448,10 @@ ragforge/
 │   ├── test_indexing_schemas.py
 │   ├── test_llm_factory.py
 │   ├── test_llm_service.py
+│   ├── test_citation_validator.py
 │   ├── test_rag_answer_service.py
 │   ├── test_rag_context_builder.py
+│   ├── test_retrieval_postprocessor.py
 │   ├── test_search_schemas.py
 │   ├── test_semantic_search_service.py
 │   └── test_vector_db_factory.py
@@ -513,6 +551,7 @@ python scripts/validation/validate_branch_15_vector_db.py
 python scripts/validation/validate_branch_16_indexing.py
 python scripts/validation/validate_branch_17_semantic_search.py
 python scripts/validation/validate_branch_18_answers.py
+python scripts/validation/validate_branch_19_rag_core_stabilization.py
 ```
 
 Run tests:
@@ -622,9 +661,9 @@ The fake embedding provider uses deterministic pseudo-vectors, so the score is n
 
 ---
 
-## 🧠 Branch 18 Augmented Answer Endpoint
+## 🧠 Branch 18/19 Stabilized Answer Endpoint
 
-Branch 18 adds the grounded answer endpoint:
+Branch 18 introduced the grounded answer endpoint, and Branch 19 stabilizes its retrieval and citation behavior:
 
 ```http
 POST /api/v1/answers/{project_id}
@@ -644,15 +683,15 @@ Example request:
 }
 ```
 
-Example response:
+Example stabilized response:
 
 ```json
 {
   "signal": "rag_answer_success",
   "message": "Answer generated from retrieved evidence.",
-  "project_id": "project18test",
+  "project_id": "project19test",
   "question": "What is RAGForge?",
-  "answer": "Fake RAGForge response generated successfully. Input preview: Question:\nWhat is RAGForge?\n\nRetrieved sources:\n[Source 1] rank=1...",
+  "answer": "RAGForge is a modular RAG backend that ingests documents, indexes chunks into a vector database, retrieves relevant evidence, and generates grounded answers with source references.",
   "sources": [
     {
       "source_number": 1,
@@ -689,11 +728,25 @@ Example response:
   ],
   "llm_model": "fake-ragforge-model",
   "retrieval_count": 1,
-  "debug_prompt": null
+  "debug_prompt": null,
+  "warnings": [],
+  "retrieval_diagnostics": {
+    "raw_count": 5,
+    "after_min_score_count": 3,
+    "after_dedup_count": 2,
+    "final_count": 1
+  },
+  "citation_validation": {
+    "valid_source_numbers": [1],
+    "invalid_source_numbers": [],
+    "was_sanitized": false
+  }
 }
 ```
 
-The fake LLM provider returns a deterministic fake response for local validation. With a real LLM provider, the same endpoint generates a real grounded answer from retrieved evidence.
+The fake LLM provider returns a deterministic fake response for local validation. With a real OpenAI-compatible provider, the same endpoint generates a real grounded answer from retrieved evidence.
+
+Branch 19 keeps debug prompts hidden by default and adds response stability fields so clients can inspect retrieval behavior and citation safety without changing the public endpoint.
 
 ---
 
@@ -751,6 +804,19 @@ RAG_ANSWER_INCLUDE_EVIDENCE_DEFAULT=true
 RAG_ANSWER_DEBUG_PROMPT_DEFAULT=false
 ```
 
+Branch 19 retrieval stabilization configuration:
+
+```env
+RAG_RETRIEVAL_CANDIDATE_LIMIT=10
+RAG_RETRIEVAL_MIN_SCORE=0
+RAG_MAX_CHUNKS_PER_ASSET=3
+RAG_ENABLE_SOURCE_DEDUP=true
+RAG_ENABLE_DOMINANT_ASSET=true
+RAG_DOMINANT_ASSET_SCORE_GAP=0.05
+RAG_DOMINANT_ASSET_MIN_CHUNKS=2
+RAG_ENABLE_CITATION_VALIDATION=true
+```
+
 LLM configuration:
 
 ```env
@@ -780,6 +846,7 @@ OPENAI_BASE_URL=""
 | [`docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md`](docs/milestones/milestone-05-rag-core/branches/branch-16-embeddings-indexing.md) | Branch 16 Embeddings & Indexing Foundation implementation details |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md`](docs/milestones/milestone-05-rag-core/branches/branch-17-semantic-search.md) | Branch 17 Semantic Search implementation details |
 | [`docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md`](docs/milestones/milestone-05-rag-core/branches/branch-18-augmented-answers-with-sources.md) | Branch 18 Augmented Answers with Sources implementation details |
+| [`docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md`](docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md) | Branch 19 RAG Core Stabilization implementation details |
 | [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
 | [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 
@@ -811,6 +878,7 @@ Branch 16 → Embeddings & Indexing Foundation
 Branch 17 → Semantic Search
 Branch 18 → Augmented Answers with Sources
 Branch 19 → RAG Core Stabilization
+Branch 20 → Production Deployment Foundation
 ```
 
 Documentation rule:
@@ -861,6 +929,9 @@ RAGForge follows these principles:
 - link every chunk to its source asset for traceability and future citations
 - return source-ready evidence before answer generation
 - generate grounded answers only from retrieved evidence
+- post-process retrieval before prompt construction
+- validate and sanitize generated citations
+- return retrieval diagnostics for answer observability
 - keep answer generation separate from retrieval
 - keep prompt construction separate from orchestration
 - hide debug prompts by default
@@ -870,7 +941,7 @@ RAGForge follows these principles:
 
 ## ✅ Current Stable Backend Capability
 
-At the end of Branch 18, RAGForge can:
+At the end of Branch 19, RAGForge can:
 
 ```text
 Upload document
@@ -895,11 +966,15 @@ Search indexed vectors by user query
   ↓
 Return ranked evidence chunks with source metadata
   ↓
+Post-process retrieved evidence
+  ↓
 Build source-numbered context
   ↓
 Generate a grounded answer through LLMService
   ↓
-Return answer, sources, evidence, model, and retrieval count
+Validate and sanitize citations
+  ↓
+Return answer, sources, evidence, model, retrieval count, warnings, diagnostics, and citation validation
 ```
 
 RAGForge also has:
@@ -949,13 +1024,17 @@ RAGAnswerService
   ↓
 SemanticSearchService
   ↓
+RetrievalPostprocessor
+  ↓
 RAGContextBuilder
   ↓
 RAG prompt builder
   ↓
 LLMService
   ↓
-Grounded answer with structured sources
+CitationValidator
+  ↓
+Grounded answer with structured sources, warnings, diagnostics, and citation validation
 ```
 
 Supported `/process/{project_id}` modes from the ingestion pipeline:
@@ -977,16 +1056,11 @@ POST /api/v1/answers/{project_id}
 
 ---
 
-## ✅ Branch 18 Validation Result
+## ✅ Branch 19 Validation Result
 
-Branch 18 validation confirms:
+Branch 19 validation confirms the stabilized RAG Core v1 flow.
 
-```text
-30 passed
-Branch 18 answer validation passed
-```
-
-The validated end-to-end test flow was:
+The validated end-to-end test flow is:
 
 ```text
 Upload
@@ -995,7 +1069,13 @@ Process
   ↓
 Index
   ↓
+Search
+  ↓
+Post-process retrieval
+  ↓
 Answer
+  ↓
+Validate citations
 ```
 
 The answer response includes:
@@ -1008,6 +1088,22 @@ evidence
 llm_model
 retrieval_count
 debug_prompt = null by default
+warnings
+retrieval_diagnostics
+citation_validation
+```
+
+Branch 19 stabilization confirms:
+
+```text
+Retrieval can fetch candidates before final filtering.
+Retrieval post-processing controls final evidence quality.
+Answer generation stays separated from retrieval.
+Prompt construction stays isolated.
+Citation validation can sanitize invalid source references.
+Warnings can explain answer-level safety corrections.
+Diagnostics can expose retrieval behavior for debugging and evaluation.
+The answer endpoint remains backward-compatible with Branch 18 clients.
 ```
 
 Architecture audit:
@@ -1016,7 +1112,9 @@ Architecture audit:
 No controller pattern added.
 No direct vector database coupling in the answer route/service.
 No direct concrete LLM provider coupling in the answer route/service.
-No hidden settings fallback in the new Branch 18 service path.
+No hidden settings fallback in the Branch 19 answer service path.
+Retrieval post-processing stays isolated from semantic search.
+Citation validation stays isolated from LLM generation.
 ```
 
 ---
