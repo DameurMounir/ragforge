@@ -6,7 +6,7 @@ class RAGContextBuilder:
     Builds controlled, source-numbered RAG context from ranked evidence.
 
     Responsibility:
-    - accept semantic search results,
+    - accept post-processed semantic search results,
     - keep source identity,
     - limit context size,
     - produce source-numbered context blocks.
@@ -36,6 +36,8 @@ class RAGContextBuilder:
 
             metadata = item.get('metadata') or {}
             source_number = len(sources) + 1
+            page = metadata.get('page')
+            source_path = metadata.get('source') or metadata.get('file_path')
 
             source = AnswerSource(
                 source_number=source_number,
@@ -49,15 +51,22 @@ class RAGContextBuilder:
                 metadata=metadata,
             )
 
-            header = (
-                f'[Source {source_number}] '
-                f'rank={source.rank}; '
-                f'score={source.score}; '
-                f'chunk_id={source.chunk_id}; '
-                f'asset_id={source.asset_id}; '
-                f'chunk_order={source.chunk_order}'
-            )
+            header_parts = [
+                f'[Source {source_number}]',
+                f'rank={source.rank}',
+                f'score={source.score}',
+                f'chunk_id={source.chunk_id}',
+                f'asset_id={source.asset_id}',
+                f'chunk_order={source.chunk_order}',
+            ]
 
+            if page is not None:
+                header_parts.append(f'page={page}')
+
+            if source_path:
+                header_parts.append(f'source={source_path}')
+
+            header = '; '.join(header_parts)
             remaining_chars = max_context_chars - used_chars - len(header) - 2
 
             if remaining_chars <= 0:

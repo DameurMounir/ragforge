@@ -10,7 +10,7 @@ class RAGAnswerRequest(BaseModel):
     """
 
     question: str = Field(..., min_length=1)
-    limit: int | None = Field(default=None, gt=0)
+    limit: int | None = Field(default=None, gt=0, le=20)
     asset_id: str | None = None
     min_score: float | None = None
     include_sources: bool | None = None
@@ -96,3 +96,10 @@ class RAGAnswerResponse(BaseModel):
     llm_model: str | None = None
     retrieval_count: int = 0
     debug_prompt: str | None = None
+
+    # Branch 19 stability fields.
+    # Kept optional/defaulted for backward compatibility with Branch 18.
+    warnings: list[str] = Field(default_factory=list)
+    retrieval_diagnostics: dict = Field(default_factory=dict)
+    citation_validation: dict = Field(default_factory=dict)
+    
