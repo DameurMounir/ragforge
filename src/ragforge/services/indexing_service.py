@@ -4,10 +4,7 @@ from src.ragforge.models.enums.response_signals import ResponseSignal
 from src.ragforge.providers.embedding.factory import EmbeddingProviderFactory
 from src.ragforge.providers.embedding.schemas import EmbeddingRequest
 from src.ragforge.providers.vector_db.schemas import VectorRecord
-from src.ragforge.schemas.indexing import (
-    IndexedChunkResult,
-    IndexingRequest,
-)
+from src.ragforge.schemas.indexing import IndexedChunkResult, IndexingRequest
 from src.ragforge.services.base_service import BaseService
 from src.ragforge.services.vector_db_service import VectorDBService
 from src.ragforge.stores.mongodb.chunk_store import ChunkStore
@@ -16,19 +13,10 @@ from src.ragforge.stores.mongodb.project_store import ProjectStore
 
 class IndexingService(BaseService):
     """
-    Branch 16 indexing orchestration service.
+    Index stored MongoDB chunks into the configured vector database.
 
-    Current implemented strategy:
-    DataChunk -> Embedding -> Vector DB Point
-
-    Future-ready strategies:
-    - late_chunking
-    - contextual chunking
-    - asset summary indexing
-    - hierarchical retrieval
-
-    Important architectural rule:
-    this service depends on VectorDBService, not directly on Qdrant.
+    Branch 21 keeps the service provider-neutral while making vector DB calls
+    async to support PgVector through SQLAlchemy async sessions.
     """
 
     def __init__(self, settings: object):
@@ -46,22 +34,9 @@ class IndexingService(BaseService):
         project_store: ProjectStore,
         chunk_store: ChunkStore,
     ) -> tuple[int, dict]:
-        """
-        Index stored MongoDB chunks into the configured vector database.
-
-        Branch 16 scope:
-        - read DataChunk records from MongoDB,
-        - generate embeddings,
-        - insert vectors into the configured vector DB,
-        - mark chunks as embedded.
-
-        This service does not perform semantic search.
-        """
-
         project = await project_store.get_project_by_project_id(
             project_id=project_id
         )
-
         if project is None or project.id is None:
             return int(HTTPStatus.NOT_FOUND), {
                 'signal': ResponseSignal.PROJECT_NOT_FOUND.value,
@@ -96,42 +71,43 @@ class IndexingService(BaseService):
         skipped_chunks = 0
         chunks_to_mark: list[dict] = []
 
-        self.vector_db_service.connect()
-
+        await self.vector_db_service.connect()
         try:
-            self.vector_db_service.ensure_collection(
+            await self.vector_db_service.ensure_collection(
                 collection_name=collection_name,
                 vector_size=vector_size,
                 distance=vector_distance,
                 do_reset=False,
             )
 
+            if indexing_request.do_reset:
+                reset_filters = {'project_id': str(project.id)}
+                if indexing_request.asset_id is not None:
+                    reset_filters['asset_id'] = str(indexing_request.asset_id)
+                await self.vector_db_service.delete_records(
+                    collection_name=collection_name,
+                    filters=reset_filters,
+                )
+
             for start in range(0, len(chunks), batch_size):
                 batch_chunks = chunks[start : start + batch_size]
-
                 valid_chunks = [
                     chunk
                     for chunk in batch_chunks
                     if chunk.id is not None and str(chunk.chunk_text).strip()
                 ]
-
                 skipped_chunks += len(batch_chunks) - len(valid_chunks)
 
                 if not valid_chunks:
                     continue
 
-                texts = [
-                    chunk.chunk_text
-                    for chunk in valid_chunks
-                ]
-
+                texts = [chunk.chunk_text for chunk in valid_chunks]
                 embedding_response = self.embedding_provider.embed_texts(
                     EmbeddingRequest(
                         texts=texts,
                         model=requested_embedding_model,
                     )
                 )
-
                 actual_embedding_model = embedding_response.model
 
                 if len(embedding_response.embeddings) != len(valid_chunks):
@@ -146,19 +122,20 @@ class IndexingService(BaseService):
                     strict=True,
                 ):
                     vector_id = str(chunk.id)
-
-                    payload = {
-                        'project_id': str(chunk.chunk_project_id),
-                        'asset_id': str(chunk.chunk_asset_id),
-                        'chunk_id': str(chunk.id),
-                        'chunk_order': chunk.chunk_order,
-                        'index_level': 'chunk',
-                        'indexing_strategy': indexing_request.strategy.value,
-                        'source_type': 'data_chunk',
-                        'embedding_model': embedding_response.model,
-                    }
-
-                    payload.update(chunk.chunk_metadata or {})
+                    payload = dict(chunk.chunk_metadata or {})
+                    payload.update(
+                        {
+                            'project_id': str(chunk.chunk_project_id),
+                            'asset_id': str(chunk.chunk_asset_id),
+                            'chunk_id': str(chunk.id),
+                            'chunk_order': chunk.chunk_order,
+                            'index_level': 'chunk',
+                            'indexing_strategy': indexing_request.strategy.value,
+                            'source_type': 'data_chunk',
+                            'embedding_model': embedding_response.model,
+                            'embedding_provider': self.settings.EMBEDDING_PROVIDER,
+                        }
+                    )
 
                     vector_records.append(
                         VectorRecord(
@@ -187,7 +164,7 @@ class IndexingService(BaseService):
                         }
                     )
 
-                inserted_count = self.vector_db_service.insert_many(
+                inserted_count = await self.vector_db_service.insert_many(
                     collection_name=collection_name,
                     records=vector_records,
                     batch_size=batch_size,
@@ -200,12 +177,10 @@ class IndexingService(BaseService):
                 await chunk_store.mark_chunks_embedded(
                     indexed_chunks=chunks_to_mark
                 )
-
         finally:
-            self.vector_db_service.close()
+            await self.vector_db_service.close()
 
         indexed_chunks = len(indexed_results)
-
         if indexed_chunks > 0 and failed_chunks > 0:
             signal = ResponseSignal.INDEXING_PARTIAL_SUCCESS.value
         elif indexed_chunks > 0:

@@ -30,6 +30,7 @@ from src.ragforge.stores.postgres.models import (  # noqa: E402,F401
     AssetTable,
     DataChunkTable,
     ProjectTable,
+    VectorRecordTable,
 )
 
 config = context.config
@@ -58,6 +59,7 @@ def _set_sqlalchemy_url() -> None:
 def run_migrations_offline() -> None:
     _set_sqlalchemy_url()
     url = config.get_main_option('sqlalchemy.url')
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -74,7 +76,6 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     _set_sqlalchemy_url()
     configuration = config.get_section(config.config_ini_section, {})
-
     connectable = engine_from_config(
         configuration,
         prefix='sqlalchemy.',

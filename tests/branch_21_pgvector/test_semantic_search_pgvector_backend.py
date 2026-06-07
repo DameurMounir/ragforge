@@ -1,5 +1,3 @@
-# tests/test_semantic_search_service.py
-
 from types import SimpleNamespace
 
 import pytest
@@ -11,15 +9,8 @@ from src.ragforge.services.semantic_search_service import SemanticSearchService
 
 
 class FakeSettings:
-    """
-    Explicit test settings.
-
-    Tests should not rely on hidden defaults inside factories or services.
-    """
-
-    EMBEDDING_MODEL = 'text-embedding-3-small'
+    EMBEDDING_MODEL = 'fake-embedding-model'
     VECTOR_DB_COLLECTION_NAME = 'ragforge_chunks'
-
     SEARCH_DEFAULT_LIMIT = 5
     SEARCH_MAX_LIMIT = 20
     SEARCH_MIN_SCORE = None
@@ -36,35 +27,30 @@ class FakeEmbeddingProvider:
 
 
 class FakeVectorDBService:
-    """
-    Async fake vector DB service.
-
-    Branch 21 makes the vector DB service/provider boundary async so this fake
-    must expose the same async contract as the production VectorDBService.
-    """
-
     results = []
+    created_instances = []
 
     def __init__(self, settings):
         self.settings = settings
         self.connected = False
+        self.search_calls = []
+        FakeVectorDBService.created_instances.append(self)
 
     async def connect(self):
         self.connected = True
 
-    async def disconnect(self):
-        self.connected = False
-
     async def close(self):
         self.connected = False
 
-    async def search_by_vector(
-        self,
-        collection_name,
-        vector,
-        limit,
-        filters,
-    ):
+    async def search_by_vector(self, collection_name, vector, limit, filters):
+        self.search_calls.append(
+            {
+                'collection_name': collection_name,
+                'vector': vector,
+                'limit': limit,
+                'filters': filters,
+            }
+        )
         return self.results
 
 
@@ -75,62 +61,48 @@ class ProjectStoreNotFound:
 
 class ProjectStoreFound:
     async def get_project_by_project_id(self, project_id: str):
-        return SimpleNamespace(id='mongo-project-object-id')
+        return SimpleNamespace(id='project-db-id')
 
 
 @pytest.fixture(autouse=True)
 def patch_service_dependencies(monkeypatch):
-    """
-    Patch factories/services at the module boundary.
-
-    This keeps the unit tests focused on service orchestration, not on real
-    vector DB or real embedding providers.
-    """
-
+    FakeVectorDBService.results = []
+    FakeVectorDBService.created_instances = []
     monkeypatch.setattr(
         service_module.EmbeddingProviderFactory,
         'create_provider',
         lambda settings: FakeEmbeddingProvider(),
     )
-    monkeypatch.setattr(
-        service_module,
-        'VectorDBService',
-        FakeVectorDBService,
-    )
+    monkeypatch.setattr(service_module, 'VectorDBService', FakeVectorDBService)
 
 
 @pytest.mark.anyio
 async def test_project_not_found_returns_not_found():
     service = SemanticSearchService(settings=FakeSettings())
-
     status_code, response = await service.search_project_chunks(
         project_id='missing-project',
         search_request=SemanticSearchRequest(query='test query'),
         project_store=ProjectStoreNotFound(),
     )
-
     assert status_code == 404
     assert response['signal'] == ResponseSignal.PROJECT_NOT_FOUND.value
 
 
 @pytest.mark.anyio
 async def test_search_no_results():
-    FakeVectorDBService.results = []
     service = SemanticSearchService(settings=FakeSettings())
-
     status_code, response = await service.search_project_chunks(
-        project_id='project16test',
+        project_id='project21test',
         search_request=SemanticSearchRequest(query='test query'),
         project_store=ProjectStoreFound(),
     )
-
     assert status_code == 200
     assert response['signal'] == ResponseSignal.SEMANTIC_SEARCH_NO_RESULTS.value
     assert response['total_results'] == 0
 
 
 @pytest.mark.anyio
-async def test_search_success_maps_ranked_evidence():
+async def test_search_success_maps_ranked_evidence_and_filters_project():
     FakeVectorDBService.results = [
         SimpleNamespace(
             record_id='chunk-vector-id',
@@ -139,26 +111,43 @@ async def test_search_success_maps_ranked_evidence():
             metadata={
                 'chunk_id': 'chunk-id',
                 'asset_id': 'asset-id',
-                'project_id': 'mongo-project-object-id',
+                'project_id': 'project-db-id',
                 'chunk_order': 1,
             },
         )
     ]
-
     service = SemanticSearchService(settings=FakeSettings())
-
     status_code, response = await service.search_project_chunks(
-        project_id='project16test',
+        project_id='project21test',
         search_request=SemanticSearchRequest(query='semantic search'),
         project_store=ProjectStoreFound(),
     )
-
+    vector_service = FakeVectorDBService.created_instances[-1]
     assert status_code == 200
     assert response['signal'] == ResponseSignal.SEMANTIC_SEARCH_SUCCESS.value
     assert response['total_results'] == 1
     assert response['results'][0]['rank'] == 1
     assert response['results'][0]['record_id'] == 'chunk-vector-id'
     assert response['results'][0]['chunk_id'] == 'chunk-id'
+    assert vector_service.search_calls[0]['filters'] == {'project_id': 'project-db-id'}
+
+
+@pytest.mark.anyio
+async def test_asset_filter_is_passed_to_vector_backend():
+    service = SemanticSearchService(settings=FakeSettings())
+    await service.search_project_chunks(
+        project_id='project21test',
+        search_request=SemanticSearchRequest(
+            query='semantic search',
+            asset_id='asset-id',
+        ),
+        project_store=ProjectStoreFound(),
+    )
+    vector_service = FakeVectorDBService.created_instances[-1]
+    assert vector_service.search_calls[0]['filters'] == {
+        'project_id': 'project-db-id',
+        'asset_id': 'asset-id',
+    }
 
 
 @pytest.mark.anyio
@@ -174,11 +163,9 @@ async def test_include_text_and_metadata_flags_hide_optional_fields():
             },
         )
     ]
-
     service = SemanticSearchService(settings=FakeSettings())
-
     status_code, response = await service.search_project_chunks(
-        project_id='project16test',
+        project_id='project21test',
         search_request=SemanticSearchRequest(
             query='semantic search',
             include_text=False,
@@ -186,7 +173,6 @@ async def test_include_text_and_metadata_flags_hide_optional_fields():
         ),
         project_store=ProjectStoreFound(),
     )
-
     assert status_code == 200
     assert response['results'][0]['text'] is None
     assert response['results'][0]['metadata'] == {}

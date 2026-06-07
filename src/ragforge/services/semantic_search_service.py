@@ -3,10 +3,7 @@ from http import HTTPStatus
 from src.ragforge.models.enums.response_signals import ResponseSignal
 from src.ragforge.providers.embedding.factory import EmbeddingProviderFactory
 from src.ragforge.providers.embedding.schemas import EmbeddingRequest
-from src.ragforge.schemas.search import (
-    SearchEvidence,
-    SemanticSearchRequest,
-)
+from src.ragforge.schemas.search import SearchEvidence, SemanticSearchRequest
 from src.ragforge.services.base_service import BaseService
 from src.ragforge.services.vector_db_service import VectorDBService
 from src.ragforge.stores.mongodb.project_store import ProjectStore
@@ -14,18 +11,9 @@ from src.ragforge.stores.mongodb.project_store import ProjectStore
 
 class SemanticSearchService(BaseService):
     """
-    Branch 17 semantic search orchestration service.
+    Query -> embedding -> vector DB search -> ranked evidence.
 
-    Responsibility:
-    query -> embedding -> vector DB search -> ranked evidence.
-
-    This service does not:
-    - generate answers,
-    - build prompts,
-    - call LLMs,
-    - know Qdrant internals.
-
-    It depends only on provider-neutral services and settings.
+    Branch 21 keeps this service provider-neutral and awaits vector DB calls.
     """
 
     def __init__(self, settings: object):
@@ -42,18 +30,9 @@ class SemanticSearchService(BaseService):
         search_request: SemanticSearchRequest,
         project_store: ProjectStore,
     ) -> tuple[int, dict]:
-        """
-        Search indexed chunks for a given project.
-
-        The project is first resolved through MongoDB because vectors are
-        filtered using the persisted MongoDB project ObjectId stored in Qdrant
-        metadata during Branch 16 indexing.
-        """
-
         project = await project_store.get_project_by_project_id(
             project_id=project_id
         )
-
         if project is None or project.id is None:
             return int(HTTPStatus.NOT_FOUND), {
                 'signal': ResponseSignal.PROJECT_NOT_FOUND.value,
@@ -66,7 +45,6 @@ class SemanticSearchService(BaseService):
             if search_request.limit is not None
             else self.settings.SEARCH_DEFAULT_LIMIT
         )
-
         if limit > self.settings.SEARCH_MAX_LIMIT:
             return int(HTTPStatus.BAD_REQUEST), {
                 'signal': ResponseSignal.SEMANTIC_SEARCH_FAILED.value,
@@ -83,13 +61,11 @@ class SemanticSearchService(BaseService):
             if search_request.min_score is not None
             else self.settings.SEARCH_MIN_SCORE
         )
-
         include_text = (
             search_request.include_text
             if search_request.include_text is not None
             else self.settings.SEARCH_INCLUDE_TEXT_DEFAULT
         )
-
         include_metadata = (
             search_request.include_metadata
             if search_request.include_metadata is not None
@@ -102,39 +78,32 @@ class SemanticSearchService(BaseService):
                 model=self.settings.EMBEDDING_MODEL,
             )
         )
-
         query_vector = embedding_response.embeddings[0]
         actual_embedding_model = embedding_response.model
 
-        filters = {
-            'project_id': str(project.id),
-        }
-
+        filters = {'project_id': str(project.id)}
         if search_request.asset_id is not None:
             filters['asset_id'] = search_request.asset_id
 
         collection_name = self.settings.VECTOR_DB_COLLECTION_NAME
 
-        self.vector_db_service.connect()
-
+        await self.vector_db_service.connect()
         try:
-            vector_results = self.vector_db_service.search_by_vector(
+            vector_results = await self.vector_db_service.search_by_vector(
                 collection_name=collection_name,
                 vector=query_vector,
                 limit=limit,
                 filters=filters,
             )
         finally:
-            self.vector_db_service.close()
+            await self.vector_db_service.close()
 
         evidence_results: list[SearchEvidence] = []
-
         for result in vector_results:
             if min_score is not None and result.score < min_score:
                 continue
 
             metadata = result.metadata or {}
-
             evidence_results.append(
                 SearchEvidence(
                     rank=len(evidence_results) + 1,
@@ -169,8 +138,5 @@ class SemanticSearchService(BaseService):
             'collection_name': collection_name,
             'embedding_model': actual_embedding_model,
             'total_results': len(evidence_results),
-            'results': [
-                evidence.model_dump()
-                for evidence in evidence_results
-            ],
+            'results': [evidence.model_dump() for evidence in evidence_results],
         }
