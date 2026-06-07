@@ -78,12 +78,12 @@ Milestone 6 — Production Deployment & Workers
 
 ### Latest Completed Branch
 
-Branch 21 — PgVector Vector Database Provider
+Branch 21 — PgVector Provider & PostgreSQL Vector Backend
 
 Git branch:
 
 ```text
-feature/21-pgvector-provider
+feature/21-pgvector-provider-indexing
 ```
 
 Branch 21 connects the PostgreSQL/PgVector production foundation to the active RAG runtime path.
@@ -184,7 +184,7 @@ The next development focus is:
 | [`docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md`](docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md) | Branch 19 RAG Core Stabilization implementation details |
 | [`docs/milestones/milestone-06-production-deployment-workers/milestone-06-production-deployment-workers.md`](docs/milestones/milestone-06-production-deployment-workers/milestone-06-production-deployment-workers.md) | Milestone 6 Production Deployment & Workers overview |
 | [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md) | Branch 20 PostgreSQL + SQLAlchemy + Alembic production layer implementation details |
-| [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider.md) | Branch 21 PgVector provider implementation, validation, and real RAG test notes |
+| [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider-indexing.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider-indexing.md) | Branch 21 PgVector provider implementation, validation, and real RAG test notes |
 | [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 | [`docs/setup/postgres-alembic.md`](docs/setup/postgres-alembic.md) | PostgreSQL and Alembic setup and validation notes |
 | [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
@@ -468,7 +468,7 @@ ragforge/
 │   │       ├── milestone-06-production-deployment-workers.md
 │   │       └── branches/
 │   │           ├── branch-20-postgres-sqlalchemy-alembic-production-layer.md
-│   │           └── branch-21-pgvector-provider.md
+│   │           └── branch-21-pgvector-provider-indexing.md
 │   ├── setup/
 │   │   ├── local-development.md
 │   │   └── postgres-alembic.md
