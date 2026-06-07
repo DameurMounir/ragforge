@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Any
-from uuid import NAMESPACE_URL, UUID, uuid5
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from qdrant_client import QdrantClient, models
 
@@ -18,10 +18,11 @@ from src.ragforge.providers.vector_db.schemas import (
 
 class QdrantProvider(BaseVectorDBProvider):
     """
-    Qdrant implementation of the vector database provider interface.
+    Qdrant implementation of the async vector database provider interface.
 
-    This provider is the only place where Qdrant-specific client logic should
-    exist. Services must use VectorDBService instead of calling Qdrant directly.
+    The underlying qdrant_client used by Branch 15 is synchronous. Branch 21 keeps
+    Qdrant supported by exposing async methods at the RAGForge provider boundary.
+    A future branch can replace this implementation with Qdrant's async client.
     """
 
     def __init__(
@@ -39,14 +40,7 @@ class QdrantProvider(BaseVectorDBProvider):
         self.prefer_grpc = prefer_grpc
         self.client: QdrantClient | None = None
 
-    def connect(self) -> None:
-        """
-        Connect to Qdrant using the configured mode.
-
-        Supported modes:
-        - local: embedded/local Qdrant storage
-        - server: remote or Docker Qdrant server
-        """
+    async def connect(self) -> None:
         if self.mode == QdrantMode.LOCAL.value:
             Path(self.local_path).mkdir(parents=True, exist_ok=True)
             self.client = QdrantClient(path=self.local_path)
@@ -64,30 +58,19 @@ class QdrantProvider(BaseVectorDBProvider):
             f'Unsupported Qdrant mode: {self.mode}'
         )
 
-    def disconnect(self) -> None:
-        """
-        Disconnect the provider client.
-
-        QdrantClient does not require an explicit network close for the current
-        use case, so we remove the client reference.
-        """
+    async def disconnect(self) -> None:
+        if self.client is not None and hasattr(self.client, 'close'):
+            self.client.close()
         self.client = None
 
     def _get_client(self) -> QdrantClient:
-        """
-        Return the active Qdrant client or fail clearly if not connected.
-        """
         if self.client is None:
             raise VectorDBProviderError(
                 'Qdrant client is not connected. Call connect() first.'
             )
-
         return self.client
 
     def _distance(self, distance: str) -> models.Distance:
-        """
-        Map RAGForge distance enum values to Qdrant distance values.
-        """
         mapping = {
             DistanceMethod.COSINE.value: models.Distance.COSINE,
             DistanceMethod.DOT.value: models.Distance.DOT,
@@ -103,17 +86,15 @@ class QdrantProvider(BaseVectorDBProvider):
 
     def _normalize_point_id(self, record_id: str | int | None) -> str | int:
         """
-        Normalize RAGForge record IDs into Qdrant-compatible point IDs.
+        Qdrant point IDs must be integers or UUID strings.
 
-        Qdrant point IDs must be integers or UUID strings. MongoDB ObjectId
-        strings are not UUID strings, so arbitrary string IDs are converted into
-        stable UUIDv5 values.
-
-        The original RAGForge record ID is preserved inside the payload as
-        `record_id` so search results can still return the real chunk/vector ID.
+        RAGForge record IDs may be domain IDs such as MongoDB IDs, asset IDs,
+        chunk IDs, or other strings. Non-UUID strings are converted to stable
+        UUIDv5 values while the original record_id is preserved in the payload.
         """
+
         if record_id is None:
-            return str(uuid5(NAMESPACE_URL, 'ragforge-auto-generated-id'))
+            return str(uuid4())
 
         if isinstance(record_id, int):
             return record_id
@@ -125,17 +106,6 @@ class QdrantProvider(BaseVectorDBProvider):
             return str(uuid5(NAMESPACE_URL, str(record_id)))
 
     def _build_payload(self, record: VectorRecord) -> dict[str, Any]:
-        """
-        Build a Qdrant payload from a VectorRecord.
-
-        Payload strategy:
-        - metadata is stored flat at the top level to make filtering simple;
-        - text is stored as a top-level field;
-        - original record_id is stored as a top-level field.
-
-        This allows Branch 17 to filter by project_id / asset_id and still
-        rebuild source metadata for Branch 18 citations.
-        """
         payload = dict(record.metadata or {})
         payload['text'] = record.text
 
@@ -145,12 +115,6 @@ class QdrantProvider(BaseVectorDBProvider):
         return payload
 
     def _build_filter(self, filters: dict | None) -> models.Filter | None:
-        """
-        Build a Qdrant metadata filter from a simple dictionary.
-
-        Example:
-        {'project_id': '...', 'asset_id': '...'}
-        """
         if not filters:
             return None
 
@@ -164,20 +128,20 @@ class QdrantProvider(BaseVectorDBProvider):
 
         return models.Filter(must=conditions)
 
-    def collection_exists(self, collection_name: str) -> bool:
+    async def collection_exists(self, collection_name: str) -> bool:
         client = self._get_client()
         return client.collection_exists(collection_name=collection_name)
 
-    def list_collections(self) -> list[str]:
+    async def list_collections(self) -> list[str]:
         client = self._get_client()
         collections = client.get_collections().collections
         return [collection.name for collection in collections]
 
-    def get_collection_info(self, collection_name: str) -> Any:
+    async def get_collection_info(self, collection_name: str) -> Any:
         client = self._get_client()
         return client.get_collection(collection_name=collection_name)
 
-    def create_collection(
+    async def create_collection(
         self,
         collection_name: str,
         vector_size: int,
@@ -186,10 +150,10 @@ class QdrantProvider(BaseVectorDBProvider):
     ) -> bool:
         client = self._get_client()
 
-        if do_reset and self.collection_exists(collection_name):
-            self.delete_collection(collection_name=collection_name)
+        if do_reset and await self.collection_exists(collection_name):
+            await self.delete_collection(collection_name=collection_name)
 
-        if self.collection_exists(collection_name):
+        if await self.collection_exists(collection_name):
             return False
 
         client.create_collection(
@@ -202,23 +166,72 @@ class QdrantProvider(BaseVectorDBProvider):
 
         return True
 
-    def delete_collection(self, collection_name: str) -> bool:
+    async def delete_collection(self, collection_name: str) -> bool:
         client = self._get_client()
 
-        if not self.collection_exists(collection_name):
+        if not await self.collection_exists(collection_name):
             return False
 
         client.delete_collection(collection_name=collection_name)
         return True
 
-    def insert_one(
+    async def delete_records(
+        self,
+        collection_name: str,
+        filters: dict | None = None,
+    ) -> int:
+        """
+        Delete vector records from Qdrant.
+
+        Qdrant delete operations do not always expose a portable deleted count.
+        To keep the provider contract useful, this implementation first scrolls
+        matching point IDs, deletes them, and returns the number of IDs selected.
+        """
+
+        client = self._get_client()
+
+        if not await self.collection_exists(collection_name):
+            return 0
+
+        qdrant_filter = self._build_filter(filters=filters)
+        deleted_count = 0
+        next_offset = None
+
+        while True:
+            points, next_offset = client.scroll(
+                collection_name=collection_name,
+                scroll_filter=qdrant_filter,
+                limit=256,
+                offset=next_offset,
+                with_payload=False,
+                with_vectors=False,
+            )
+
+            point_ids = [point.id for point in points]
+
+            if point_ids:
+                client.delete(
+                    collection_name=collection_name,
+                    points_selector=models.PointIdsList(
+                        points=point_ids,
+                    ),
+                    wait=True,
+                )
+                deleted_count += len(point_ids)
+
+            if next_offset is None:
+                break
+
+        return deleted_count
+
+    async def insert_one(
         self,
         collection_name: str,
         record: VectorRecord,
     ) -> bool:
         client = self._get_client()
 
-        if not self.collection_exists(collection_name):
+        if not await self.collection_exists(collection_name):
             raise VectorDBProviderError(
                 f'Cannot insert into missing collection: {collection_name}'
             )
@@ -236,7 +249,7 @@ class QdrantProvider(BaseVectorDBProvider):
 
         return True
 
-    def insert_many(
+    async def insert_many(
         self,
         collection_name: str,
         records: list[VectorRecord],
@@ -244,7 +257,7 @@ class QdrantProvider(BaseVectorDBProvider):
     ) -> int:
         client = self._get_client()
 
-        if not self.collection_exists(collection_name):
+        if not await self.collection_exists(collection_name):
             raise VectorDBProviderError(
                 f'Cannot insert into missing collection: {collection_name}'
             )
@@ -253,7 +266,6 @@ class QdrantProvider(BaseVectorDBProvider):
 
         for start in range(0, len(records), batch_size):
             batch = records[start : start + batch_size]
-
             points = [
                 models.PointStruct(
                     id=self._normalize_point_id(record.record_id),
@@ -267,51 +279,35 @@ class QdrantProvider(BaseVectorDBProvider):
                 collection_name=collection_name,
                 points=points,
             )
-
             inserted_count += len(points)
 
         return inserted_count
 
-    def search_by_vector(
+    async def search_by_vector(
         self,
         collection_name: str,
         vector: list[float],
         limit: int = 10,
         filters: dict | None = None,
     ) -> list[VectorSearchResult]:
-        """
-        Search vectors by query vector and return provider-neutral results.
-
-        Important:
-        `_build_payload()` stores metadata flat at Qdrant payload level.
-        Therefore, search result normalization must rebuild metadata by removing
-        internal fields: `text` and `record_id`.
-
-        This is what makes Branch 17 source-ready for Branch 18:
-        search results now expose chunk_id, asset_id, project_id, chunk_order,
-        and all other metadata needed for citations.
-        """
         client = self._get_client()
 
         query_response = client.query_points(
             collection_name=collection_name,
             query=vector,
-            query_filter=self._build_filter(filters),
+            query_filter=self._build_filter(filters=filters),
             limit=limit,
             with_payload=True,
             with_vectors=False,
         )
 
         points = getattr(query_response, 'points', query_response)
-
         normalized_results: list[VectorSearchResult] = []
 
         for point in points:
             payload = point.payload or {}
-
             text = payload.get('text')
             record_id = payload.get('record_id', point.id)
-
             metadata = {
                 key: value
                 for key, value in payload.items()

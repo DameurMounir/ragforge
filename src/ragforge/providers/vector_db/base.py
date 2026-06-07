@@ -9,34 +9,35 @@ from src.ragforge.providers.vector_db.schemas import (
 
 class BaseVectorDBProvider(ABC):
     """
-    Abstract interface for all vector database providers.
+    Async abstract interface for all vector database providers.
 
-    RAGForge services must depend on this interface, not directly on Qdrant,
-    Pinecone, Weaviate, Chroma, PgVector, or any concrete implementation.
+    Branch 21 upgrades the vector DB boundary to async because PgVector uses
+    SQLAlchemy async sessions. Qdrant remains supported through async wrappers
+    around its current synchronous client calls.
     """
 
     @abstractmethod
-    def connect(self) -> None:
+    async def connect(self) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def disconnect(self) -> None:
+    async def disconnect(self) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def collection_exists(self, collection_name: str) -> bool:
+    async def collection_exists(self, collection_name: str) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    def list_collections(self) -> list[str]:
+    async def list_collections(self) -> list[str]:
         raise NotImplementedError
 
     @abstractmethod
-    def get_collection_info(self, collection_name: str) -> Any:
+    async def get_collection_info(self, collection_name: str) -> Any:
         raise NotImplementedError
 
     @abstractmethod
-    def create_collection(
+    async def create_collection(
         self,
         collection_name: str,
         vector_size: int,
@@ -46,11 +47,19 @@ class BaseVectorDBProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def delete_collection(self, collection_name: str) -> bool:
+    async def delete_collection(self, collection_name: str) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    def insert_one(
+    async def delete_records(
+        self,
+        collection_name: str,
+        filters: dict | None = None,
+    ) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def insert_one(
         self,
         collection_name: str,
         record: VectorRecord,
@@ -58,7 +67,7 @@ class BaseVectorDBProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def insert_many(
+    async def insert_many(
         self,
         collection_name: str,
         records: list[VectorRecord],
@@ -67,7 +76,7 @@ class BaseVectorDBProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def search_by_vector(
+    async def search_by_vector(
         self,
         collection_name: str,
         vector: list[float],

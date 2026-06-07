@@ -23,3 +23,6 @@ SQLAlchemy[asyncio]==2.0.50
 alembic==1.18.4
 asyncpg==0.31.0
 psycopg[binary]==3.3.4
+
+# pgvector provides the SQLAlchemy VECTOR type and Python support
+pgvector==0.4.2

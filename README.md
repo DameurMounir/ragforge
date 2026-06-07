@@ -22,7 +22,7 @@ RAGForge is also designed as one infrastructure brick inside a broader agentic s
 
 RAGForge is built with the understanding that **RAG is not dead**.
 
-What is becoming obsolete is **naive RAG**: systems that only split documents into chunks, retrieve a few similar passages, and pass them directly to an LLM without strong metadata, structure, provenance, indexing, source control, or workflow discipline.
+What is becoming obsolete is **naive RAG**: systems that only split documents into chunks, retrieve a few similar passages, and pass them directly to an LLM without strong metadata, structure, provenance, indexing, source control, retrieval strategy, citation validation, or workflow discipline.
 
 RAGForge follows a more modern **knowledge-oriented RAG direction**.
 
@@ -43,7 +43,11 @@ Vector Indexing
   ↓
 Semantic Search
   ↓
+Retrieval Post-processing
+  ↓
 Grounded / Augmented Answer with Sources
+  ↓
+Citation Validation
   ↓
 Production Persistence / Workers / Observability
 ```
@@ -61,7 +65,7 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 | M3 | 📄 Document Upload & Processing Foundation | Upload endpoint, file validation, project-based storage, and document processing foundation |
 | M4 | 🗄️ Database Metadata, Indexing & Ingestion Pipeline | MongoDB metadata layer, asset schemas, stores, indexes, upload metadata persistence, processing metadata persistence, and stable ingestion pipeline |
 | M5 | 🔎 RAG Core: LLM, Vector Store & Retrieval | LLM factory, vector database factory, embeddings, indexing, semantic search, retrieval, grounded answer generation, citation validation, and RAG Core stabilization |
-| M6 | 🐳 Production Deployment & Workers | PostgreSQL/PgVector evolution, SQLAlchemy, Alembic, Docker deployment, Redis, Celery workers, schedulers, and production runtime setup |
+| M6 | 🐳 Production Deployment & Workers | PostgreSQL/PgVector evolution, SQLAlchemy, Alembic, Docker deployment, provider hardening, workers, schedulers, and production runtime setup |
 | M7 | 🛡️ Observability, Security & Agent-Ready Evolution | Monitoring, structured logs, evaluation, security hardening, and preparation for agentic system integration |
 
 ---
@@ -74,74 +78,92 @@ Milestone 6 — Production Deployment & Workers
 
 ### Latest Completed Branch
 
-Branch 20 — PostgreSQL + SQLAlchemy + Alembic Production Layer
+Branch 21 — PgVector Vector Database Provider
 
 Git branch:
 
 ```text
-feature/20-postgres-sqlalchemy-alembic-production-layer
+feature/21-pgvector-provider
 ```
 
-Branch 20 starts the production persistence evolution after the stabilized RAG Core v1 release.
+Branch 21 connects the PostgreSQL/PgVector production foundation to the active RAG runtime path.
 
-It introduces a PostgreSQL production metadata foundation using SQLAlchemy async ORM, Alembic migrations, a session manager, repository classes, ORM-to-domain record mappers, and a Unit of Work transaction boundary.
+It adds a real PgVector vector database provider behind the same provider-neutral `VectorDBService` used by Qdrant. The same indexing, semantic search, and answer-generation service layer can now run with either Qdrant or PgVector by changing configuration, without rewriting route or orchestration code.
 
-Branch 20 does not replace the full MongoDB ingestion path yet. It prepares a production-grade relational persistence foundation that later branches can connect to ingestion, indexing, workers, PgVector-powered retrieval, and deployment workflows.
+Branch 21 keeps MongoDB as the current ingestion metadata store for projects, assets, and data chunks, while PostgreSQL/PgVector becomes an active vector storage and semantic retrieval backend.
 
-The Branch 20 production persistence flow is:
+The Branch 21 runtime vector path is:
 
 ```text
-Application / Service Layer
+IndexingService / SemanticSearchService
   ↓
-PostgresSessionManager
+EmbeddingProviderFactory
   ↓
-PostgresUnitOfWork
+OpenAICompatibleEmbeddingProvider / FakeEmbeddingProvider
   ↓
-ProjectRepository / AssetRepository / ChunkRepository
+VectorDBService
   ↓
-Domain Records
+VectorDBProviderFactory
   ↓
-SQLAlchemy ORM Models
+QdrantProvider or PgVectorProvider
   ↓
-Alembic Migration
-  ↓
-PostgreSQL / PgVector
+Qdrant collection or PostgreSQL vector_records table
 ```
 
-Branch 20 adds and validates:
+The real validated RAG path is:
 
-- PostgreSQL Docker service with PgVector support,
-- PostgreSQL environment configuration,
-- SQLAlchemy async session manager,
-- safe PostgreSQL URL builders shared by runtime and Alembic,
-- Alembic migration environment,
-- first production metadata migration,
-- project, asset, and data chunk ORM models,
-- server-side UUID defaults,
-- repository layer without internal commits,
-- Unit of Work layer owning commit and rollback,
-- ORM-to-domain record mappers,
-- project, asset, and chunk repository protocols,
-- atomic chunk replacement,
-- technical uniqueness for `stored_filename`, `storage_path`, and `vector_record_id`,
-- database constraints for metadata integrity,
-- Branch 20 validation scripts,
-- architecture tests for transaction policy, model identity, URL builders, repository contracts, and package hygiene.
+```text
+Postman / HTTP Client
+  ↓
+FastAPI Routes
+  ↓
+MongoDB metadata and chunks
+  ↓
+OpenAI text-embedding-3-small embeddings
+  ↓
+PostgreSQL + pgvector vector storage
+  ↓
+Semantic retrieval
+  ↓
+Retrieval post-processing and dominant-asset strategy
+  ↓
+GPT-4o-mini grounded answer generation
+  ↓
+Citation validation
+```
+
+Branch 21 adds and validates:
+
+- PgVector provider implementation,
+- provider-neutral PgVector/Qdrant selection through `VECTOR_DB_PROVIDER`,
+- one Alembic-managed `vector_records` table,
+- PgVector extension validation,
+- vector insert/search/delete behavior,
+- similarity scoring policy,
+- vector-size guard policy,
+- SQL-safety tests,
+- async vector database provider contract,
+- Qdrant provider compatibility with the async contract,
+- indexing reset behavior for PgVector,
+- semantic search through PgVector,
+- real OpenAI embedding integration with `text-embedding-3-small`,
+- real grounded answer validation with `gpt-4o-mini`,
+- Postman-based end-to-end validation.
 
 ### Next Focus
 
-Continue Milestone 6 by connecting the production persistence foundation to the wider runtime path.
+Continue Milestone 6 by hardening the production runtime around the now-active PostgreSQL/PgVector backend.
 
 The next development focus is:
 
 - production runtime hardening,
 - stronger Docker environment consistency,
-- relational metadata integration,
-- PgVector evolution,
+- clean environment templates for Qdrant and PgVector,
 - worker-oriented processing,
 - background indexing and ingestion,
 - local/demo deployment readiness,
 - observability preparation,
+- evaluation datasets and retrieval-quality metrics,
 - stronger operational validation.
 
 ---
@@ -162,6 +184,7 @@ The next development focus is:
 | [`docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md`](docs/milestones/milestone-05-rag-core/branches/branch-19-rag-core-stabilization.md) | Branch 19 RAG Core Stabilization implementation details |
 | [`docs/milestones/milestone-06-production-deployment-workers/milestone-06-production-deployment-workers.md`](docs/milestones/milestone-06-production-deployment-workers/milestone-06-production-deployment-workers.md) | Milestone 6 Production Deployment & Workers overview |
 | [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md) | Branch 20 PostgreSQL + SQLAlchemy + Alembic production layer implementation details |
+| [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider.md) | Branch 21 PgVector provider implementation, validation, and real RAG test notes |
 | [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 | [`docs/setup/postgres-alembic.md`](docs/setup/postgres-alembic.md) | PostgreSQL and Alembic setup and validation notes |
 | [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
@@ -311,6 +334,22 @@ SQLAlchemy ORM Models
 PostgreSQL / PgVector
 ```
 
+After Branch 21, PgVector becomes an active vector database backend behind the same provider-neutral vector service used by Qdrant:
+
+```text
+VectorDBService
+  ↓
+VectorDBProviderFactory
+  ↓
+BaseVectorDBProvider
+  ├── QdrantProvider
+  └── PgVectorProvider
+      ↓
+PostgreSQL vector_records table
+      ↓
+pgvector extension + vector indexes
+```
+
 The route stays thin. The orchestration lives in the service layer. Provider-specific implementation details stay behind interfaces. Transaction ownership stays in the Unit of Work layer, not inside repositories.
 
 Full architecture reference:
@@ -361,8 +400,10 @@ Examples of values that must come from configuration:
 ```text
 embedding model
 embedding provider
+embedding vector size
+vector database provider
 vector collection name
-vector size
+vector table name
 distance metric
 provider URL
 provider name
@@ -374,15 +415,16 @@ answer default limit
 answer max context size
 debug prompt behavior
 PostgreSQL host / port / credentials / pool settings
+PgVector index type / index parameters
 ```
 
-Generic services must not reference provider-specific configuration names such as `QDRANT_COLLECTION_NAME`, `QDRANT_VECTOR_SIZE`, or `QDRANT_DISTANCE`.
+Generic services must not reference provider-specific configuration names such as `QDRANT_COLLECTION_NAME`, `QDRANT_VECTOR_SIZE`, `PGVECTOR_TABLE_NAME`, or `PGVECTOR_INDEX_TYPE`.
 
 Provider-specific settings are allowed only at provider boundaries, such as the provider factory and provider implementation.
 
-Database-specific behavior is allowed at database infrastructure boundaries, such as PostgreSQL session management, SQLAlchemy models, repositories, and Alembic migrations.
+Database-specific behavior is allowed at database infrastructure boundaries, such as PostgreSQL session management, SQLAlchemy models, repositories, PgVector provider code, and Alembic migrations.
 
-This keeps RAGForge provider-aware at the boundaries, testable, and ready for future backends such as Qdrant, pgvector, Weaviate, Milvus, Pinecone, or another vector database.
+This keeps RAGForge provider-aware at the boundaries, testable, and ready for future backends such as Qdrant, PgVector, Weaviate, Milvus, Pinecone, or another vector database.
 
 ---
 
@@ -404,7 +446,8 @@ ragforge/
 │   ├── env.py
 │   ├── script.py.mako
 │   └── versions/
-│       └── 20260605_0001_create_postgres_metadata_schema.py
+│       ├── 20260605_0001_create_postgres_metadata_schema.py
+│       └── 20260606_0002_create_pgvector_vector_records.py
 │
 ├── docs/
 │   ├── architecture/
@@ -424,7 +467,8 @@ ragforge/
 │   │   └── milestone-06-production-deployment-workers/
 │   │       ├── milestone-06-production-deployment-workers.md
 │   │       └── branches/
-│   │           └── branch-20-postgres-sqlalchemy-alembic-production-layer.md
+│   │           ├── branch-20-postgres-sqlalchemy-alembic-production-layer.md
+│   │           └── branch-21-pgvector-provider.md
 │   ├── setup/
 │   │   ├── local-development.md
 │   │   └── postgres-alembic.md
@@ -440,7 +484,8 @@ ragforge/
 │       ├── validate_branch_18_answers.py
 │       ├── validate_branch_19_rag_core_stabilization.py
 │       ├── validate_branch_20_alembic_state.py
-│       └── validate_branch_20_postgres_production_layer.py
+│       ├── validate_branch_20_postgres_production_layer.py
+│       └── validate_branch_21_pgvector_provider.py
 │
 ├── storage/
 │   └── uploads/
@@ -448,6 +493,16 @@ ragforge/
 │           └── documents/
 │
 ├── tests/
+│   ├── branch_21_pgvector/
+│   │   ├── test_indexing_service_pgvector_reset.py
+│   │   ├── test_pgvector_factory_selection.py
+│   │   ├── test_pgvector_index_policy.py
+│   │   ├── test_pgvector_provider_contract.py
+│   │   ├── test_pgvector_provider_sql_safety.py
+│   │   ├── test_pgvector_similarity_scoring.py
+│   │   ├── test_pgvector_vector_size_config.py
+│   │   ├── test_semantic_search_pgvector_backend.py
+│   │   └── test_vector_db_async_contract.py
 │   ├── test_answer_schemas.py
 │   ├── test_embedding_provider_factory.py
 │   ├── test_indexing_schemas.py
@@ -482,6 +537,13 @@ ragforge/
         │   ├── embedding/
         │   ├── llm/
         │   └── vector_db/
+        │       ├── base.py
+        │       ├── enums.py
+        │       ├── factory.py
+        │       ├── schemas.py
+        │       └── implementations/
+        │           ├── qdrant_provider.py
+        │           └── pgvector_provider.py
         ├── routes/
         │   ├── answers.py
         │   ├── documents.py
@@ -548,6 +610,12 @@ Quick run command:
 uvicorn src.ragforge.main:app --reload --reload-dir src --host 127.0.0.1 --port 8000
 ```
 
+For real local validation with Docker volumes inside the repository, run without reload or restrict reload directories to avoid file-watcher permission errors:
+
+```bash
+uvicorn src.ragforge.main:app --host 127.0.0.1 --port 8000
+```
+
 MongoDB, Qdrant, and PostgreSQL/PgVector are launched through the Docker Compose file inside the `docker/` directory:
 
 ```bash
@@ -581,6 +649,12 @@ alembic -c alembic.ini upgrade head
 alembic -c alembic.ini current
 ```
 
+Expected current head after Branch 21:
+
+```text
+20260606_0002 (head)
+```
+
 Run validation scripts:
 
 ```bash
@@ -591,6 +665,7 @@ python scripts/validation/validate_branch_18_answers.py
 python scripts/validation/validate_branch_19_rag_core_stabilization.py
 python scripts/validation/validate_branch_20_alembic_state.py
 python scripts/validation/validate_branch_20_postgres_production_layer.py
+python scripts/validation/validate_branch_21_pgvector_provider.py
 ```
 
 Run tests:
@@ -633,7 +708,7 @@ Example request:
 
 ```json
 {
-  "query": "indexing pipeline fake embedding Qdrant",
+  "query": "PostgreSQL pgvector extension OpenAI embeddings",
   "limit": 5,
   "asset_id": null,
   "min_score": null,
@@ -642,11 +717,13 @@ Example request:
 }
 ```
 
-The fake embedding provider uses deterministic pseudo-vectors, so the score is not expected to behave like a real semantic embedding score. With real embedding providers, the score becomes semantically meaningful.
+With `VECTOR_DB_PROVIDER="pgvector"`, semantic search retrieves from PostgreSQL/PgVector.
+
+With `VECTOR_DB_PROVIDER="qdrant"`, semantic search retrieves from Qdrant.
+
+The same route and service layer are used for both backends.
 
 ### Stabilized Answer Endpoint
-
-Branch 18 introduced the grounded answer endpoint, and Branch 19 stabilizes its retrieval and citation behavior:
 
 ```http
 POST /api/v1/answers/{project_id}
@@ -685,11 +762,17 @@ The fake LLM provider returns a deterministic fake response for local validation
 
 Branch 19 keeps debug prompts hidden by default and adds response stability fields so clients can inspect retrieval behavior and citation safety without changing the public endpoint.
 
+Branch 21 validates that the same answer endpoint can run on PgVector-backed retrieval.
+
 ---
 
 ## 🐘 PostgreSQL / PgVector Configuration
 
-Branch 20 introduces PostgreSQL as the production persistence foundation and PgVector as the future vector-capable relational database layer.
+Branch 20 introduces PostgreSQL as the production persistence foundation.
+
+Branch 21 activates PgVector as a real vector database provider behind the RAG runtime path.
+
+PostgreSQL runtime configuration:
 
 ```env
 POSTGRES_USER=ragforge
@@ -713,11 +796,33 @@ POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 ```
 
-Branch 20 validates PostgreSQL with:
+PgVector provider configuration:
+
+```env
+VECTOR_DB_PROVIDER="pgvector"
+VECTOR_DB_COLLECTION_NAME="ragforge_chunks"
+VECTOR_DB_VECTOR_SIZE=1536
+VECTOR_DB_DISTANCE="cosine"
+
+PGVECTOR_TABLE_NAME="vector_records"
+PGVECTOR_DISTANCE="cosine"
+PGVECTOR_INDEX_TYPE="hnsw"
+PGVECTOR_INDEX_VECTOR_TYPE="vector"
+PGVECTOR_HNSW_M=16
+PGVECTOR_HNSW_EF_CONSTRUCTION=64
+PGVECTOR_HNSW_EF_SEARCH=40
+PGVECTOR_IVFFLAT_LISTS=100
+PGVECTOR_IVFFLAT_PROBES=10
+PGVECTOR_INDEX_MIN_RECORDS=0
+PGVECTOR_AUTO_CREATE_INDEX=true
+PGVECTOR_CREATE_EXTENSION_ON_STARTUP=true
+```
+
+Branch 21 validates PgVector with:
 
 ```bash
-python scripts/validation/validate_branch_20_alembic_state.py
-python scripts/validation/validate_branch_20_postgres_production_layer.py
+python scripts/validation/validate_branch_21_pgvector_provider.py
+pytest tests/branch_21_pgvector -q
 ```
 
 ---
@@ -727,12 +832,13 @@ python scripts/validation/validate_branch_20_postgres_production_layer.py
 Generic vector indexing configuration:
 
 ```env
+VECTOR_DB_PROVIDER="pgvector"
 VECTOR_DB_COLLECTION_NAME="ragforge_chunks"
 VECTOR_DB_VECTOR_SIZE=1536
 VECTOR_DB_DISTANCE="cosine"
 ```
 
-Vector DB provider configuration:
+Qdrant provider configuration:
 
 ```env
 VECTOR_DB_PROVIDER="qdrant"
@@ -746,14 +852,20 @@ QDRANT_PREFER_GRPC=false
 Embedding configuration:
 
 ```env
-EMBEDDING_PROVIDER="fake"
+EMBEDDING_PROVIDER="openai_compatible"
 EMBEDDING_MODEL="text-embedding-3-small"
 EMBEDDING_VECTOR_SIZE=1536
 EMBEDDING_BATCH_SIZE=32
 FAKE_EMBEDDING_MODEL="fake-embedding-model"
 
 EMBEDDING_OPENAI_API_KEY=""
-EMBEDDING_OPENAI_BASE_URL=""
+EMBEDDING_OPENAI_BASE_URL="https://api.openai.com/v1"
+```
+
+For local fake validation:
+
+```env
+EMBEDDING_PROVIDER="fake"
 ```
 
 Semantic search configuration:
@@ -779,12 +891,12 @@ RAG_ANSWER_DEBUG_PROMPT_DEFAULT=false
 Retrieval stabilization configuration:
 
 ```env
-RAG_RETRIEVAL_CANDIDATE_LIMIT=10
-RAG_RETRIEVAL_MIN_SCORE=0
+RAG_RETRIEVAL_CANDIDATE_LIMIT=30
+RAG_RETRIEVAL_MIN_SCORE=0.25
 RAG_MAX_CHUNKS_PER_ASSET=3
 RAG_ENABLE_SOURCE_DEDUP=true
 RAG_ENABLE_DOMINANT_ASSET=true
-RAG_DOMINANT_ASSET_SCORE_GAP=0.05
+RAG_DOMINANT_ASSET_SCORE_GAP=0.08
 RAG_DOMINANT_ASSET_MIN_CHUNKS=2
 RAG_ENABLE_CITATION_VALIDATION=true
 ```
@@ -792,15 +904,72 @@ RAG_ENABLE_CITATION_VALIDATION=true
 LLM configuration:
 
 ```env
-LLM_PROVIDER="fake"
-LLM_DEFAULT_MODEL="fake-ragforge-model"
+LLM_PROVIDER="openai_compatible"
+LLM_DEFAULT_MODEL="gpt-4o-mini"
 LLM_TEMPERATURE=0.2
 LLM_MAX_OUTPUT_TOKENS=512
 LLM_TIMEOUT_SECONDS=60
 
 OPENAI_API_KEY=""
-OPENAI_BASE_URL=""
+OPENAI_BASE_URL="https://api.openai.com/v1"
 ```
+
+For local fake validation:
+
+```env
+LLM_PROVIDER="fake"
+LLM_DEFAULT_MODEL="fake-ragforge-model"
+```
+
+Do not commit private `.env` files or API keys.
+
+---
+
+## 🧪 Branch 21 Real RAG Test Flow
+
+Branch 21 was validated through the real runtime API using Postman and curl.
+
+The tested path was:
+
+```text
+Upload document
+  ↓
+Process document into MongoDB chunks
+  ↓
+Index chunks with OpenAI text-embedding-3-small
+  ↓
+Store vectors in PostgreSQL / pgvector
+  ↓
+Search with PgVector-backed semantic retrieval
+  ↓
+Generate an answer with gpt-4o-mini
+  ↓
+Validate citations
+```
+
+Example Postman/curl endpoint sequence:
+
+```text
+GET  /api/v1/health/
+POST /api/v1/documents/upload/{project_id}
+POST /api/v1/documents/process/{project_id}
+POST /api/v1/indexing/{project_id}
+POST /api/v1/search/{project_id}
+POST /api/v1/answers/{project_id}
+```
+
+Expected successful answer response includes:
+
+```text
+signal = rag_answer_success
+embedding_model = text-embedding-3-small
+embedding_provider = openai_compatible
+llm_model = gpt-4o-mini
+retrieval_count > 0
+citation_validation.invalid_source_numbers = []
+```
+
+A validated answer can use a README source to explain that RAGForge is a production-oriented RAG backend platform, designed as a modular foundation for production-ready RAG systems and broader agentic system architecture.
 
 ---
 
@@ -831,6 +1000,7 @@ Branch 17 → Semantic Search
 Branch 18 → Augmented Answers with Sources
 Branch 19 → RAG Core Stabilization
 Branch 20 → PostgreSQL + SQLAlchemy + Alembic Production Layer
+Branch 21 → PgVector Vector Database Provider
 ```
 
 Documentation rule:
@@ -891,13 +1061,15 @@ RAGForge follows these principles:
 - keep answer generation separate from retrieval,
 - keep prompt construction separate from orchestration,
 - hide debug prompts by default,
-- keep pipeline orchestration reusable for future workers and agentic layers.
+- keep pipeline orchestration reusable for future workers and agentic layers,
+- keep vector database providers swappable through configuration,
+- keep PgVector and Qdrant behind the same vector provider contract.
 
 ---
 
 ## ✅ Current Stable Backend Capability
 
-At the end of Branch 20, RAGForge can:
+At the end of Branch 21, RAGForge can:
 
 ```text
 Upload document
@@ -908,13 +1080,13 @@ Process one asset or all project assets
   ↓
 Extract and split document content
   ↓
-Persist DataChunk records
+Persist DataChunk records in MongoDB
   ↓
 Update asset processing status
   ↓
 Generate embeddings for stored chunks
   ↓
-Index vectors into Qdrant
+Index vectors into Qdrant or PostgreSQL/PgVector
   ↓
 Mark chunks as embedded
   ↓
@@ -923,6 +1095,8 @@ Search indexed vectors by user query
 Return ranked evidence chunks with source metadata
   ↓
 Post-process retrieved evidence
+  ↓
+Apply retrieval quality policies such as score threshold, source deduplication, max chunks per asset, and dominant asset selection
   ↓
 Build source-numbered context
   ↓
@@ -953,10 +1127,8 @@ VectorDBService
 VectorDBProviderFactory
   ↓
 BaseVectorDBProvider
-  ↓
-QdrantProvider
-  ↓
-Qdrant Docker service
+  ├── QdrantProvider
+  └── PgVectorProvider
 ```
 
 And:
@@ -970,7 +1142,7 @@ FakeEmbeddingProvider / OpenAICompatibleEmbeddingProvider
   ↓
 IndexingService
   ↓
-Qdrant vector indexing
+Qdrant or PgVector vector indexing
 ```
 
 And:
@@ -993,7 +1165,7 @@ CitationValidator
 Grounded answer with structured sources, warnings, diagnostics, and citation validation
 ```
 
-And Branch 20 adds:
+And:
 
 ```text
 PostgresSessionManager
@@ -1113,7 +1285,7 @@ Validated result:
 ```text
 Branch 20 Alembic state validation passed.
 Branch 20 PostgreSQL production-layer validation passed.
-47 passed
+Full test suite passed.
 ```
 
 Branch 20 confirms:
@@ -1122,7 +1294,6 @@ Branch 20 confirms:
 PostgreSQL / PgVector container runs successfully.
 PgVector extension is available.
 Alembic can upgrade the database to the current head revision.
-The current migration revision is 20260605_0001 (head).
 The PostgreSQL production-layer validation script passes.
 Repository tests confirm repositories do not commit.
 Unit of Work tests confirm commit and rollback ownership.
@@ -1141,6 +1312,87 @@ No hardcoded PostgreSQL URL construction in runtime code.
 Runtime and Alembic share the same URL-building logic.
 Alembic migration and ORM models are aligned.
 MongoDB ingestion remains stable while PostgreSQL production persistence is introduced safely.
+```
+
+---
+
+## ✅ Branch 21 Validation Result
+
+Branch 21 validation confirms the PgVector vector database provider and real runtime integration.
+
+Validated commands:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yml up -d
+docker compose --env-file .env -f docker/docker-compose.yml ps
+alembic -c alembic.ini upgrade head
+alembic -c alembic.ini current
+python -m compileall src/ragforge migrations scripts/validation tests
+python scripts/validation/validate_branch_21_pgvector_provider.py
+pytest tests/branch_21_pgvector -q
+pytest -q
+```
+
+Expected Alembic head:
+
+```text
+20260606_0002 (head)
+```
+
+Validated PgVector provider output:
+
+```text
+PostgreSQL ping succeeded.
+PgVector extension exists.
+vector_records table exists.
+Configured PgVector index exists.
+PgVector insert_many succeeded.
+PgVector search_by_vector succeeded.
+Branch 21 PgVector provider validation passed.
+```
+
+Validated test result:
+
+```text
+Branch 21 tests passed.
+Full test suite passed.
+```
+
+Real Postman-based RAG validation confirmed:
+
+```text
+signal = rag_answer_success
+embedding_model = text-embedding-3-small
+embedding_provider = openai_compatible
+llm_model = gpt-4o-mini
+retrieval_count > 0
+citation_validation.invalid_source_numbers = []
+```
+
+Branch 21 confirms:
+
+```text
+PgVector is an active vector database backend, not only a Docker dependency.
+Qdrant remains supported behind the same provider-neutral service boundary.
+MongoDB remains the current ingestion metadata and chunk store.
+PostgreSQL/PgVector stores searchable vectors in the vector_records table.
+Indexing can insert OpenAI embedding vectors into PgVector.
+Semantic search can retrieve ranked evidence from PgVector.
+The answer endpoint can generate grounded answers from PgVector-backed retrieval.
+Citation validation works with PgVector-backed evidence.
+Provider selection works through VECTOR_DB_PROVIDER.
+```
+
+Architecture audit:
+
+```text
+No route changes required to switch Qdrant/PgVector.
+No service-layer hardcoding of PgVector-specific settings.
+Provider-specific logic stays inside provider/factory boundaries.
+The vector database contract is async across providers.
+Qdrant compatibility is preserved after the async contract upgrade.
+PgVector SQL behavior is covered by safety and contract tests.
+Vector size is controlled by EMBEDDING_VECTOR_SIZE with optional equality guards.
 ```
 
 ---
