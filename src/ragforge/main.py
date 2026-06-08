@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from src.ragforge.core.config import get_settings
+from src.ragforge.observability.metrics import setup_metrics
 from src.ragforge.routes.base import base_router
 from src.ragforge.routes.health import health_router
 from src.ragforge.routes.documents import documents_router
@@ -20,6 +21,9 @@ from src.ragforge.stores.postgres.session import (
 
 
 app = FastAPI()
+
+settings = get_settings()
+setup_metrics(app=app, settings=settings)
 
 
 @app.on_event('startup')

@@ -259,3 +259,8 @@ storage/vector_db/
 
 # Optional Qdrant bind-mount storage if used later
 docker/ragforge_qdrant_data/
+
+# Branch 22 Docker runtime env files.
+docker/env/.env.*
+!docker/env/.env.*.example
+

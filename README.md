@@ -78,95 +78,97 @@ Milestone 6 — Production Deployment & Workers
 
 ### Latest Completed Branch
 
-Branch 21 — PgVector Provider & PostgreSQL Vector Backend
+Branch 22 — Production Docker Runtime & Observability Foundation
 
 Git branch:
 
 ```text
-feature/21-pgvector-provider-indexing
+feature/22-production-docker-observability
 ```
 
-Branch 21 connects the PostgreSQL/PgVector production foundation to the active RAG runtime path.
+Branch 22 turns the Branch 21 RAG engine into a production-like, observable Docker runtime.
 
-It adds a real PgVector vector database provider behind the same provider-neutral `VectorDBService` used by Qdrant. The same indexing, semantic search, and answer-generation service layer can now run with either Qdrant or PgVector by changing configuration, without rewriting route or orchestration code.
+It keeps the existing RAGForge architecture intact: MongoDB remains the current ingestion metadata and chunk store, PostgreSQL/PgVector remains the active production vector backend, Qdrant remains supported as an optional vector backend, and the route/service/provider boundaries introduced in previous branches remain unchanged.
 
-Branch 21 keeps MongoDB as the current ingestion metadata store for projects, assets, and data chunks, while PostgreSQL/PgVector becomes an active vector storage and semantic retrieval backend.
-
-The Branch 21 runtime vector path is:
+Branch 22 adds a server-ready Docker runtime around the existing application:
 
 ```text
-IndexingService / SemanticSearchService
+Nginx
   ↓
-EmbeddingProviderFactory
+RAGForge FastAPI container
   ↓
-OpenAICompatibleEmbeddingProvider / FakeEmbeddingProvider
+MongoDB metadata + chunks
   ↓
-VectorDBService
+PostgreSQL / PgVector
   ↓
-VectorDBProviderFactory
+Qdrant optional backend
   ↓
-QdrantProvider or PgVectorProvider
+Prometheus scraping
   ↓
-Qdrant collection or PostgreSQL vector_records table
+Grafana dashboards / datasource provisioning
 ```
 
-The real validated RAG path is:
+The Branch 22 production runtime path is:
 
 ```text
-Postman / HTTP Client
+Docker Compose production stack
   ↓
-FastAPI Routes
+ragforge-migrations one-shot service
   ↓
-MongoDB metadata and chunks
+ragforge-api container
   ↓
-OpenAI text-embedding-3-small embeddings
+Nginx reverse proxy
   ↓
-PostgreSQL + pgvector vector storage
+Prometheus metrics scraping
   ↓
-Semantic retrieval
+Grafana datasource provisioning
   ↓
-Retrieval post-processing and dominant-asset strategy
-  ↓
-GPT-4o-mini grounded answer generation
-  ↓
-Citation validation
+Postgres exporter / Node exporter
 ```
 
-Branch 21 adds and validates:
+Branch 22 adds and validates:
 
-- PgVector provider implementation,
-- provider-neutral PgVector/Qdrant selection through `VECTOR_DB_PROVIDER`,
-- one Alembic-managed `vector_records` table,
-- PgVector extension validation,
-- vector insert/search/delete behavior,
-- similarity scoring policy,
-- vector-size guard policy,
-- SQL-safety tests,
-- async vector database provider contract,
-- Qdrant provider compatibility with the async contract,
-- indexing reset behavior for PgVector,
-- semantic search through PgVector,
-- real OpenAI embedding integration with `text-embedding-3-small`,
-- real grounded answer validation with `gpt-4o-mini`,
-- Postman-based end-to-end validation.
+- production Docker Compose runtime,
+- RAGForge Dockerfile and container entrypoint,
+- separate one-shot migration service,
+- Nginx reverse proxy configuration,
+- Prometheus scraping configuration,
+- Grafana datasource provisioning,
+- FastAPI Prometheus metrics middleware,
+- route-template metrics to avoid high-cardinality raw path labels,
+- Prometheus multiprocess collector support,
+- PostgreSQL/PgVector monitoring through Postgres exporter,
+- Node exporter service,
+- production environment examples,
+- production Docker runtime documentation,
+- static runtime validation script,
+- observability test coverage.
+
+Validated result:
+
+```text
+Branch 22 static production runtime file validation passed.
+Branch 22 production Docker observability validation passed.
+Branch 22 observability tests: 2 passed.
+Full test suite: 95 passed.
+```
 
 ### Next Focus
 
-Continue Milestone 6 by hardening the production runtime around the now-active PostgreSQL/PgVector backend.
+Continue Milestone 6 with server deployment and continuous delivery automation.
 
 The next development focus is:
 
-- production runtime hardening,
-- stronger Docker environment consistency,
-- clean environment templates for Qdrant and PgVector,
-- worker-oriented processing,
-- background indexing and ingestion,
-- local/demo deployment readiness,
-- observability preparation,
-- evaluation datasets and retrieval-quality metrics,
-- stronger operational validation.
-
----
+- Ubuntu server deployment structure,
+- deployment user and SSH key strategy,
+- server-side secrets handling,
+- systemd service supervision,
+- firewall hardening,
+- GitHub Actions deployment workflow,
+- production healthcheck automation,
+- rollback and backup scripts,
+- HTTPS/TLS deployment hardening,
+- Grafana dashboard provisioning and operational validation.
 
 ## 📚 Documentation Map Entries
 
@@ -185,8 +187,10 @@ The next development focus is:
 | [`docs/milestones/milestone-06-production-deployment-workers/milestone-06-production-deployment-workers.md`](docs/milestones/milestone-06-production-deployment-workers/milestone-06-production-deployment-workers.md) | Milestone 6 Production Deployment & Workers overview |
 | [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md) | Branch 20 PostgreSQL + SQLAlchemy + Alembic production layer implementation details |
 | [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider-indexing.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider-indexing.md) | Branch 21 PgVector provider implementation, validation, and real RAG test notes |
+| [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-22-production-docker-observability.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-22-production-docker-observability.md) | Branch 22 production Docker runtime and observability foundation implementation details |
 | [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 | [`docs/setup/postgres-alembic.md`](docs/setup/postgres-alembic.md) | PostgreSQL and Alembic setup and validation notes |
+| [`docs/setup/production-docker-runtime.md`](docs/setup/production-docker-runtime.md) | Production Docker runtime, observability stack, and validation commands |
 | [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
 
 ---
@@ -350,6 +354,26 @@ PostgreSQL vector_records table
 pgvector extension + vector indexes
 ```
 
+After Branch 22, the production runtime and observability foundation wrap the existing application without changing the RAG Core service boundaries:
+
+```text
+Nginx Reverse Proxy
+  ↓
+RAGForge FastAPI Container
+  ↓
+Service Layer / Provider Layer
+  ↓
+MongoDB + PostgreSQL/PgVector + Qdrant
+  ↓
+Prometheus Metrics Collection
+  ↓
+Grafana Datasource Provisioning
+  ↓
+Operational Validation
+```
+
+Branch 22 keeps deployment infrastructure outside business logic. Metrics are exposed through a configurable FastAPI observability layer, while Prometheus, Grafana, exporters, and Docker runtime concerns stay in the deployment boundary.
+
 The route stays thin. The orchestration lives in the service layer. Provider-specific implementation details stay behind interfaces. Transaction ownership stays in the Unit of Work layer, not inside repositories.
 
 Full architecture reference:
@@ -435,12 +459,33 @@ ragforge/
 ├── README.md
 ├── LICENSE
 ├── requirements.txt
+├── requirements_branch22_additions.txt
 ├── alembic.ini
 ├── .env.example
 ├── .gitignore
+├── .dockerignore
 │
 ├── docker/
-│   └── docker-compose.yml
+│   ├── docker-compose.yml
+│   ├── docker-compose.production.yml
+│   ├── .gitignore
+│   ├── env/
+│   │   ├── .env.app.example
+│   │   ├── .env.grafana.example
+│   │   ├── .env.mongodb.example
+│   │   ├── .env.postgres.example
+│   │   └── .env.postgres-exporter.example
+│   ├── grafana/
+│   │   └── provisioning/
+│   │       └── datasources/
+│   │           └── prometheus.yml
+│   ├── nginx/
+│   │   └── default.conf
+│   ├── prometheus/
+│   │   └── prometheus.yml
+│   └── ragforge/
+│       ├── Dockerfile
+│       └── entrypoint.sh
 │
 ├── migrations/
 │   ├── env.py
@@ -468,10 +513,12 @@ ragforge/
 │   │       ├── milestone-06-production-deployment-workers.md
 │   │       └── branches/
 │   │           ├── branch-20-postgres-sqlalchemy-alembic-production-layer.md
-│   │           └── branch-21-pgvector-provider-indexing.md
+│   │           ├── branch-21-pgvector-provider-indexing.md
+│   │           └── branch-22-production-docker-observability.md
 │   ├── setup/
 │   │   ├── local-development.md
-│   │   └── postgres-alembic.md
+│   │   ├── postgres-alembic.md
+│   │   └── production-docker-runtime.md
 │   └── api/
 │       └── endpoints.md
 │
@@ -485,7 +532,8 @@ ragforge/
 │       ├── validate_branch_19_rag_core_stabilization.py
 │       ├── validate_branch_20_alembic_state.py
 │       ├── validate_branch_20_postgres_production_layer.py
-│       └── validate_branch_21_pgvector_provider.py
+│       ├── validate_branch_21_pgvector_provider.py
+│       └── validate_branch_22_production_runtime.py
 │
 ├── storage/
 │   └── uploads/
@@ -503,6 +551,8 @@ ragforge/
 │   │   ├── test_pgvector_vector_size_config.py
 │   │   ├── test_semantic_search_pgvector_backend.py
 │   │   └── test_vector_db_async_contract.py
+│   ├── branch_22_observability/
+│   │   └── test_metrics_middleware.py
 │   ├── test_answer_schemas.py
 │   ├── test_embedding_provider_factory.py
 │   ├── test_indexing_schemas.py
@@ -531,6 +581,9 @@ ragforge/
         ├── models/
         │   ├── enums/
         │   └── db_schemes/
+        ├── observability/
+        │   ├── __init__.py
+        │   └── metrics.py
         ├── prompts/
         │   └── rag_answer_prompt.py
         ├── providers/
@@ -628,6 +681,28 @@ Check container status:
 docker compose --env-file .env -f docker/docker-compose.yml ps
 ```
 
+Branch 22 also provides a production-like Docker runtime:
+
+```bash
+cp docker/env/.env.app.example docker/env/.env.app
+cp docker/env/.env.mongodb.example docker/env/.env.mongodb
+cp docker/env/.env.postgres.example docker/env/.env.postgres
+cp docker/env/.env.grafana.example docker/env/.env.grafana
+cp docker/env/.env.postgres-exporter.example docker/env/.env.postgres-exporter
+
+docker compose -f docker/docker-compose.production.yml up --build -d
+docker compose -f docker/docker-compose.production.yml ps
+```
+
+Production runtime local endpoints:
+
+```text
+RAGForge API direct: http://127.0.0.1:8000/api/v1/health/
+Nginx reverse proxy: http://127.0.0.1:8088/api/v1/health/
+Prometheus:          http://127.0.0.1:9090
+Grafana:             http://127.0.0.1:3000
+```
+
 Check Qdrant health:
 
 ```bash
@@ -666,6 +741,7 @@ python scripts/validation/validate_branch_19_rag_core_stabilization.py
 python scripts/validation/validate_branch_20_alembic_state.py
 python scripts/validation/validate_branch_20_postgres_production_layer.py
 python scripts/validation/validate_branch_21_pgvector_provider.py
+python scripts/validation/validate_branch_22_production_runtime.py
 ```
 
 Run tests:
@@ -925,6 +1001,55 @@ Do not commit private `.env` files or API keys.
 
 ---
 
+## 🐳 Production Runtime & Observability Configuration
+
+Branch 22 adds a production-like Docker runtime and Prometheus-compatible application metrics.
+
+Metrics configuration:
+
+```env
+METRICS_ENABLED=true
+METRICS_PATH=/metrics
+METRICS_INCLUDE_IN_SCHEMA=false
+```
+
+Production Docker runtime environment examples are stored in:
+
+```text
+docker/env/.env.app.example
+docker/env/.env.mongodb.example
+docker/env/.env.postgres.example
+docker/env/.env.grafana.example
+docker/env/.env.postgres-exporter.example
+```
+
+The production Compose stack is defined in:
+
+```text
+docker/docker-compose.production.yml
+```
+
+The stack includes:
+
+```text
+ragforge-migrations
+ragforge-api
+nginx
+mongodb
+postgres
+qdrant
+prometheus
+grafana
+postgres-exporter
+node-exporter
+```
+
+The observability layer exposes application-level HTTP metrics such as request count, request duration, in-progress requests, and exception count. Route-template labels are used instead of raw dynamic URL paths to avoid high-cardinality metrics.
+
+Branch 22 keeps deployment concerns separated from RAG Core behavior. Metrics, Docker services, Prometheus, Grafana, exporters, and reverse proxy configuration live at the runtime boundary.
+
+---
+
 ## 🧪 Branch 21 Real RAG Test Flow
 
 Branch 21 was validated through the real runtime API using Postman and curl.
@@ -1001,6 +1126,7 @@ Branch 18 → Augmented Answers with Sources
 Branch 19 → RAG Core Stabilization
 Branch 20 → PostgreSQL + SQLAlchemy + Alembic Production Layer
 Branch 21 → PgVector Vector Database Provider
+Branch 22 → Production Docker Runtime & Observability Foundation
 ```
 
 Documentation rule:
@@ -1063,13 +1189,17 @@ RAGForge follows these principles:
 - hide debug prompts by default,
 - keep pipeline orchestration reusable for future workers and agentic layers,
 - keep vector database providers swappable through configuration,
-- keep PgVector and Qdrant behind the same vector provider contract.
+- keep PgVector and Qdrant behind the same vector provider contract,
+- keep production runtime concerns outside RAG Core business logic,
+- expose operational metrics through a configurable observability boundary,
+- avoid high-cardinality metric labels by using route templates,
+- keep Docker, Prometheus, Grafana, and reverse proxy concerns in deployment/runtime files.
 
 ---
 
 ## ✅ Current Stable Backend Capability
 
-At the end of Branch 21, RAGForge can:
+At the end of Branch 22, RAGForge can:
 
 ```text
 Upload document
@@ -1183,6 +1313,26 @@ SQLAlchemy ORM models
 Alembic-managed PostgreSQL schema
   ↓
 PostgreSQL / PgVector Docker service
+```
+
+And:
+
+```text
+Production Docker Runtime
+  ↓
+Nginx reverse proxy
+  ↓
+RAGForge API container
+  ↓
+One-shot migration service
+  ↓
+MongoDB / PostgreSQL-PgVector / Qdrant services
+  ↓
+Prometheus application and infrastructure scraping
+  ↓
+Grafana datasource provisioning
+  ↓
+Static validation and observability tests
 ```
 
 Supported `/process/{project_id}` modes from the ingestion pipeline:
@@ -1393,6 +1543,57 @@ The vector database contract is async across providers.
 Qdrant compatibility is preserved after the async contract upgrade.
 PgVector SQL behavior is covered by safety and contract tests.
 Vector size is controlled by EMBEDDING_VECTOR_SIZE with optional equality guards.
+```
+
+---
+
+## ✅ Branch 22 Validation Result
+
+Branch 22 validation confirms the production Docker runtime and observability foundation.
+
+Validated commands:
+
+```bash
+python scripts/validation/validate_branch_22_production_runtime.py
+pytest tests/branch_22_observability -q
+pytest -q
+```
+
+Validated output:
+
+```text
+Branch 22 static production runtime file validation passed.
+Branch 22 production Docker observability validation passed.
+2 passed
+95 passed
+```
+
+Branch 22 confirms:
+
+```text
+The production Docker Compose runtime is present and statically validated.
+The RAGForge API has a production Dockerfile and entrypoint.
+The API container can be orchestrated with MongoDB, PostgreSQL/PgVector, Qdrant, Nginx, Prometheus, Grafana, Postgres exporter, and Node exporter.
+The migration service is separated from the long-running API container.
+FastAPI metrics middleware is available through a configurable metrics boundary.
+Prometheus route-template metrics avoid high-cardinality raw path labels.
+Prometheus multiprocess collector support is prepared for multi-worker runtime.
+Grafana datasource provisioning is present.
+Nginx reverse proxy configuration is present.
+Branch 21 PgVector and Qdrant provider compatibility is preserved.
+The existing RAG Core test suite remains stable.
+```
+
+Architecture audit:
+
+```text
+No GitHub Actions or VPS automation is mixed into Branch 22.
+No RAG Core behavior is changed by deployment infrastructure.
+No provider-specific deployment behavior leaks into generic services.
+No real secrets are committed.
+Production runtime files stay inside the Docker and setup documentation boundary.
+Observability is added as an application boundary, not as route/service business logic.
+The full test suite remains green after adding runtime and observability infrastructure.
 ```
 
 ---
