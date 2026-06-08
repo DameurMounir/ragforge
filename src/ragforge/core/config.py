@@ -306,6 +306,19 @@ class Settings(BaseSettings):
         return self
 
     # Pydantic v2 configuration.
+
+    # Branch 22 — Prometheus / observability settings.
+    METRICS_ENABLED: bool = True
+    METRICS_PATH: str = '/metrics'
+    METRICS_INCLUDE_IN_SCHEMA: bool = False
+    METRICS_SKIP_PATHS: list[str] = [
+        '/metrics',
+        '/docs',
+        '/redoc',
+        '/openapi.json',
+        '/favicon.ico',
+    ]
+
     model_config = SettingsConfigDict(
         env_file='.env',
         env_file_encoding='utf-8',

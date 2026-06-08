@@ -26,3 +26,6 @@ psycopg[binary]==3.3.4
 
 # pgvector provides the SQLAlchemy VECTOR type and Python support
 pgvector==0.4.2
+
+prometheus-client==0.23.1
+httpx==0.28.1
