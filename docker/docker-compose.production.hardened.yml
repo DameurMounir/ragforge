@@ -1,0 +1,188 @@
+# Branch 23 hardening override.
+# This file is designed specifically as an overlay on Branch 22 v3 docker/docker-compose.production.yml.
+# Apply together with docker/docker-compose.production.yml:
+# docker compose -f docker/docker-compose.production.yml -f docker/docker-compose.production.hardened.yml up -d
+
+services:
+  ragforge-api:
+    read_only: true
+    pids_limit: 512
+    cpus: '2.0'
+    mem_limit: 2g
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      # Branch 22 v3 already mounts /tmp for the API container.
+      # This hardened override only adds the writable home tmpfs required by read_only=true.
+      - /home/ragforge:rw,noexec,nosuid,size=64m
+    depends_on:
+      ragforge-migrations:
+        condition: service_completed_successfully
+      mongodb:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      qdrant-healthcheck:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2g
+        reservations:
+          cpus: '0.50'
+          memory: 512m
+
+  nginx:
+    read_only: true
+    pids_limit: 256
+    cpus: '0.50'
+    mem_limit: 256m
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /var/cache/nginx:rw,noexec,nosuid,size=64m
+      - /var/run:rw,noexec,nosuid,size=16m
+      - /tmp:rw,noexec,nosuid,size=16m
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256m
+
+  mongodb:
+    pids_limit: 512
+    cpus: '2.0'
+    mem_limit: 3g
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3g
+        reservations:
+          cpus: '0.50'
+          memory: 512m
+
+  postgres:
+    pids_limit: 512
+    cpus: '2.0'
+    mem_limit: 3g
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3g
+        reservations:
+          cpus: '0.50'
+          memory: 512m
+
+  qdrant:
+    pids_limit: 512
+    cpus: '2.0'
+    mem_limit: 3g
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3g
+        reservations:
+          cpus: '0.50'
+          memory: 512m
+
+  qdrant-healthcheck:
+    image: curlimages/curl:8.16.0
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        for i in $$(seq 1 60); do
+          if curl -fsS http://qdrant:6333/healthz >/dev/null; then
+            echo 'Qdrant healthcheck passed.'
+            exit 0
+          fi
+          echo "Waiting for Qdrant... $$i/60"
+          sleep 2
+        done
+        echo 'Qdrant healthcheck failed.' >&2
+        exit 1
+    depends_on:
+      qdrant:
+        condition: service_started
+    networks:
+      - ragforge-backend
+    restart: 'no'
+
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.49.0
+    command:
+      - '--mongodb.uri=mongodb://$${MONGO_EXPORTER_USERNAME}:$${MONGO_EXPORTER_PASSWORD}@mongodb:27017/admin?authSource=admin'
+      - '--collect-all'
+      - '--compatible-mode'
+    env_file:
+      - ./env/.env.mongodb-exporter
+    ports:
+      - '127.0.0.1:9216:9216'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ragforge-backend
+    restart: unless-stopped
+    pids_limit: 128
+    cpus: '0.50'
+    mem_limit: 256m
+    security_opt:
+      - no-new-privileges:true
+
+  prometheus:
+    volumes:
+      - ragforge_prometheus_data:/prometheus
+      - ./prometheus/prometheus.production.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      ragforge-api:
+        condition: service_healthy
+      postgres-exporter:
+        condition: service_started
+      mongodb-exporter:
+        condition: service_started
+      node-exporter:
+        condition: service_started
+      qdrant-healthcheck:
+        condition: service_completed_successfully
+    pids_limit: 256
+    cpus: '1.0'
+    mem_limit: 1g
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+
+  grafana:
+    volumes:
+      - ragforge_grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    pids_limit: 256
+    cpus: '1.0'
+    mem_limit: 1g
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+
+  postgres-exporter:
+    pids_limit: 128
+    cpus: '0.50'
+    mem_limit: 256m
+    security_opt:
+      - no-new-privileges:true
+
+  node-exporter:
+    pids_limit: 128
+    cpus: '0.50'
+    mem_limit: 256m
+    security_opt:
+      - no-new-privileges:true

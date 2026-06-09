@@ -1,0 +1,24 @@
+# Optional HTTPS override for server deployment with a real domain.
+# Requires docker/nginx/default.https.conf and certificates under docker/certbot/conf.
+# First-time certificate bootstrap is handled by scripts/deployment/ragforge-tls-init.sh.
+
+services:
+  nginx:
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/default.https.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+
+  certbot:
+    image: certbot/certbot:v5.6.0
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    entrypoint: /bin/sh
+    command: -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done;'
+    restart: unless-stopped
+    networks:
+      - ragforge-backend

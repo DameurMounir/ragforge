@@ -1,0 +1,24 @@
+[Unit]
+Description=RAGForge Production Docker Runtime
+Requires=docker.service
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=ragforge_deploy
+Group=docker
+WorkingDirectory=/opt/ragforge/app
+Environment=RAGFORGE_APP_DIR=/opt/ragforge/app
+Environment=RAGFORGE_COMPOSE_FILES=-f docker/docker-compose.production.yml -f docker/docker-compose.production.hardened.yml
+ExecStartPre=/usr/bin/docker compose -f docker/docker-compose.production.yml -f docker/docker-compose.production.hardened.yml config
+ExecStart=/usr/bin/docker compose -f docker/docker-compose.production.yml -f docker/docker-compose.production.hardened.yml up -d --remove-orphans
+ExecStop=/usr/bin/docker compose -f docker/docker-compose.production.yml -f docker/docker-compose.production.hardened.yml down
+TimeoutStartSec=600
+TimeoutStopSec=120
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

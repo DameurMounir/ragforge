@@ -1,0 +1,10 @@
+[Unit]
+Description=RAGForge Runtime Healthcheck
+After=ragforge-production.service
+
+[Service]
+Type=oneshot
+User=ragforge_deploy
+Group=docker
+WorkingDirectory=/opt/ragforge/app
+ExecStart=/opt/ragforge/app/scripts/deployment/ragforge-healthcheck.sh
