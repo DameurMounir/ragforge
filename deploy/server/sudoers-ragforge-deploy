@@ -1,0 +1,3 @@
+# Install with: sudo visudo -f /etc/sudoers.d/ragforge-deploy
+# This permits the deployment user to manage only the RAGForge systemd service.
+ragforge_deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart ragforge-production.service, /usr/bin/systemctl start ragforge-production.service, /usr/bin/systemctl stop ragforge-production.service, /usr/bin/systemctl status ragforge-production.service, /usr/bin/systemctl daemon-reload

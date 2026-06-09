@@ -1,0 +1,96 @@
+name: Deploy RAGForge Production Runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ragforge-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  quality-gates:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile source and tests
+        run: |
+          python -m compileall src/ragforge scripts/validation tests
+
+      - name: Run deployment artifact validation
+        run: |
+          python scripts/validation/validate_branch_23_deployment_package.py
+
+      - name: Run tests
+        run: |
+          pytest -q
+
+  deploy-production:
+    name: Deploy to production server
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+
+    env:
+      RAGFORGE_DEPLOY_HOST: ${{ secrets.RAGFORGE_PRODUCTION_HOST }}
+      RAGFORGE_DEPLOY_USER: ${{ secrets.RAGFORGE_PRODUCTION_USER }}
+      RAGFORGE_DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.RAGFORGE_PRODUCTION_SSH_PRIVATE_KEY }}
+      RAGFORGE_DEPLOY_SSH_PORT: ${{ vars.RAGFORGE_PRODUCTION_SSH_PORT || '22' }}
+      RAGFORGE_REMOTE_DEPLOY_COMMAND: ${{ vars.RAGFORGE_REMOTE_DEPLOY_COMMAND || '/opt/ragforge/app/scripts/deployment/ragforge-deploy.sh' }}
+
+    steps:
+      - name: Validate required deployment inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RAGFORGE_DEPLOY_HOST"
+          test -n "$RAGFORGE_DEPLOY_USER"
+          test -n "$RAGFORGE_DEPLOY_SSH_PRIVATE_KEY"
+          test -n "$RAGFORGE_DEPLOY_SSH_PORT"
+          test -n "$RAGFORGE_REMOTE_DEPLOY_COMMAND"
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$RAGFORGE_DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/ragforge_production_key
+          chmod 600 ~/.ssh/ragforge_production_key
+          ssh-keyscan -p "$RAGFORGE_DEPLOY_SSH_PORT" -H "$RAGFORGE_DEPLOY_HOST" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Execute remote deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh \
+            -i ~/.ssh/ragforge_production_key \
+            -p "$RAGFORGE_DEPLOY_SSH_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=3 \
+            "$RAGFORGE_DEPLOY_USER@$RAGFORGE_DEPLOY_HOST" \
+            "bash -lc '$RAGFORGE_REMOTE_DEPLOY_COMMAND'"
