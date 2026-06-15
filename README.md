@@ -74,101 +74,51 @@ This makes RAGForge more than a basic RAG demo. It is designed as a foundation f
 
 ### Current Milestone
 
-Milestone 6 — Production Deployment & Workers
+Milestone 6 - Production Deployment & Workers
 
 ### Latest Completed Branch
 
-Branch 22 — Production Docker Runtime & Observability Foundation
+Branch 23 - Server Deployment, GitHub Actions CD, Production Verification, and Deployment Hardening
 
-Git branch:
+Historical branch snapshots:
 
-```text
-feature/22-production-docker-observability
-```
+- feature/23-server-deployment-github-actions
+- docs/23-production-deployment-setup
+- fix/23-deployment-hardening-alignment
 
-Branch 22 turns the Branch 21 RAG engine into a production-like, observable Docker runtime.
+Branch 23 turns the Branch 22 production Docker runtime into a real server-deployed system.
 
-It keeps the existing RAGForge architecture intact: MongoDB remains the current ingestion metadata and chunk store, PostgreSQL/PgVector remains the active production vector backend, Qdrant remains supported as an optional vector backend, and the route/service/provider boundaries introduced in previous branches remain unchanged.
+It adds GitHub Actions CD, SSH deployment, server-side deploy scripts, production health checks, backup and rollback foundations, hardened compose validation, server deployment documentation, and production verification without changing RAG Core behavior.
 
-Branch 22 adds a server-ready Docker runtime around the existing application:
+Verified production state:
 
-```text
-Nginx
-  ↓
-RAGForge FastAPI container
-  ↓
-MongoDB metadata + chunks
-  ↓
-PostgreSQL / PgVector
-  ↓
-Qdrant optional backend
-  ↓
-Prometheus scraping
-  ↓
-Grafana dashboards / datasource provisioning
-```
+- production docs endpoint: 200 OK
+- health signal: app_healthy
+- environment: production-docker
+- latest verified main SHA: a42730b
 
-The Branch 22 production runtime path is:
+### Current Branch Workflow Policy
 
-```text
-Docker Compose production stack
-  ↓
-ragforge-migrations one-shot service
-  ↓
-ragforge-api container
-  ↓
-Nginx reverse proxy
-  ↓
-Prometheus metrics scraping
-  ↓
-Grafana datasource provisioning
-  ↓
-Postgres exporter / Node exporter
-```
+RAGForge uses historical branches.
 
-Branch 22 adds and validates:
+Old branches are historical snapshots. Never update old branches after merge.
 
-- production Docker Compose runtime,
-- RAGForge Dockerfile and container entrypoint,
-- separate one-shot migration service,
-- Nginx reverse proxy configuration,
-- Prometheus scraping configuration,
-- Grafana datasource provisioning,
-- FastAPI Prometheus metrics middleware,
-- route-template metrics to avoid high-cardinality raw path labels,
-- Prometheus multiprocess collector support,
-- PostgreSQL/PgVector monitoring through Postgres exporter,
-- Node exporter service,
-- production environment examples,
-- production Docker runtime documentation,
-- static runtime validation script,
-- observability test coverage.
+Correct workflow:
 
-Validated result:
+Issue -> Milestone -> Branch from main -> Work on branch until valid -> Push branch -> Pull Request to main -> Merge to main after validation -> Keep old branch unchanged as history
 
-```text
-Branch 22 static production runtime file validation passed.
-Branch 22 production Docker observability validation passed.
-Branch 22 observability tests: 2 passed.
-Full test suite: 95 passed.
-```
+Rules:
+
+- main = accepted product state
+- active branch = construction and validation area
+- old branch = historical snapshot
+- never update old branches after merge
+- never work directly on main
+- new work starts from main
 
 ### Next Focus
 
-Continue Milestone 6 with server deployment and continuous delivery automation.
-
-The next development focus is:
-
-- Ubuntu server deployment structure,
-- deployment user and SSH key strategy,
-- server-side secrets handling,
-- systemd service supervision,
-- firewall hardening,
-- GitHub Actions deployment workflow,
-- production healthcheck automation,
-- rollback and backup scripts,
-- HTTPS/TLS deployment hardening,
-- Grafana dashboard provisioning and operational validation.
+Continue Milestone 6 with worker and scheduler foundations: background workers, queue and scheduler architecture, asynchronous document processing, job status tracking, retry and failure policy, worker observability, and production-safe long-running task management.
 
 ## 📚 Documentation Map Entries
 
@@ -188,6 +138,7 @@ The next development focus is:
 | [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-20-postgres-sqlalchemy-alembic-production-layer.md) | Branch 20 PostgreSQL + SQLAlchemy + Alembic production layer implementation details |
 | [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider-indexing.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-21-pgvector-provider-indexing.md) | Branch 21 PgVector provider implementation, validation, and real RAG test notes |
 | [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-22-production-docker-observability.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-22-production-docker-observability.md) | Branch 22 production Docker runtime and observability foundation implementation details |
+| [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-23-server-deployment-github-actions.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-23-server-deployment-github-actions.md) | Branch 23 server deployment, GitHub Actions CD, production verification, and hardening recap |
 | [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 | [`docs/setup/postgres-alembic.md`](docs/setup/postgres-alembic.md) | PostgreSQL and Alembic setup and validation notes |
 | [`docs/setup/production-docker-runtime.md`](docs/setup/production-docker-runtime.md) | Production Docker runtime, observability stack, and validation commands |
@@ -515,6 +466,7 @@ ragforge/
 │   │           ├── branch-20-postgres-sqlalchemy-alembic-production-layer.md
 │   │           ├── branch-21-pgvector-provider-indexing.md
 │   │           └── branch-22-production-docker-observability.md
+| [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-23-server-deployment-github-actions.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-23-server-deployment-github-actions.md) | Branch 23 server deployment, GitHub Actions CD, production verification, and hardening recap |
 │   ├── setup/
 │   │   ├── local-development.md
 │   │   ├── postgres-alembic.md
@@ -1127,6 +1079,7 @@ Branch 19 → RAG Core Stabilization
 Branch 20 → PostgreSQL + SQLAlchemy + Alembic Production Layer
 Branch 21 → PgVector Vector Database Provider
 Branch 22 → Production Docker Runtime & Observability Foundation
+Branch 23 -> Server Deployment & GitHub Actions CD
 ```
 
 Documentation rule:
@@ -1595,6 +1548,46 @@ Production runtime files stay inside the Docker and setup documentation boundary
 Observability is added as an application boundary, not as route/service business logic.
 The full test suite remains green after adding runtime and observability infrastructure.
 ```
+
+---
+
+## ✅ Branch 23 Validation Result
+
+Branch 23 validation confirms the production server deployment, GitHub Actions CD, deployment hardening, and real domain health.
+
+Validated commands:
+
+- python3 -m pytest -q
+- python3 scripts/validation/validate_branch_23_deployment_package.py
+- docker compose -f docker/docker-compose.production.yml config -q
+- docker compose -f docker/docker-compose.production.yml -f docker/docker-compose.production.hardened.yml config -q
+
+Validated production checks:
+
+- curl -I https://ragforge.sherizon.com/docs
+- curl -s https://ragforge.sherizon.com/api/v1/health/ | python3 -m json.tool
+
+Validated output:
+
+- GitHub Actions workflow: success
+- Quality gates: passed
+- Remote deployment: passed
+- Production docs endpoint: 200 OK
+- Health signal: app_healthy
+- Environment: production-docker
+- Latest verified main SHA: a42730b
+
+Branch 23 confirms that RAGForge is deployed on a real production server, GitHub Actions can deploy to production through SSH, production runtime is healthchecked after deployment, deployment secrets are separated from application runtime secrets, and hardened compose validation is part of the deployment validation gate.
+
+Architecture audit:
+
+- No RAG Core behavior changed.
+- No API contract changed.
+- No provider logic changed.
+- No retrieval, indexing, LLM, embedding, or storage schema behavior changed.
+- Deployment concerns remain in deployment/runtime boundaries.
+- Main remains the accepted product state.
+- Historical branches remain unchanged as branch snapshots.
 
 ---
 
