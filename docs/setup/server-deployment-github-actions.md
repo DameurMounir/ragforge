@@ -156,3 +156,60 @@ bash scripts/deployment/ragforge-deploy.sh
 python scripts/validation/validate_branch_23_deployment_package.py
 pytest tests/branch_23_deployment -q
 ```
+
+---
+
+## Verified Sherizon production deployment setup
+
+Branch 23 was verified on the real Sherizon production server.
+
+Verified production domain:
+
+    https://ragforge.sherizon.com
+
+Verified repository path on the server:
+
+    /home/dameurmounir/development/tech/ai-engineering/projects/rag/ragforge
+
+The original Branch 23 scripts default to:
+
+    /opt/ragforge/app
+
+For the current Sherizon server, the GitHub Actions remote deployment command must override the default path with:
+
+    RAGFORGE_APP_DIR=/home/dameurmounir/development/tech/ai-engineering/projects/rag/ragforge
+    RAGFORGE_BACKUP_DIR=/home/dameurmounir/deployment/backups/ragforge
+    RAGFORGE_RELEASE_STATE_DIR=/home/dameurmounir/deployment/state/ragforge
+    RAGFORGE_COMPOSE_FILES="-f docker/docker-compose.production.yml"
+
+The verified public checks were:
+
+    curl -I https://ragforge.sherizon.com/docs
+    curl -s https://ragforge.sherizon.com/api/v1/health/ | python3 -m json.tool
+
+Verified result:
+
+    /docs returned 200 OK
+    /api/v1/health/ returned app_healthy
+    environment was production-docker
+
+Verified deployed SHA:
+
+    ffd00d636f951adc16e44c76081b3d82b407b615
+
+Verified deployment timestamp:
+
+    2026-06-15T09:05:56Z
+
+The final GitHub Actions deployment passed:
+
+    Quality gates passed
+    Deployment input validation passed
+    SSH configuration passed
+    Remote deployment passed
+
+Known hardening debt:
+
+    docker/docker-compose.production.hardened.yml currently has a pids_limit conflict.
+    The verified deployment temporarily uses only docker/docker-compose.production.yml.
+    A follow-up branch should align deployment defaults, backup defaults, hardened compose validation, and Node 24 GitHub Actions compatibility.

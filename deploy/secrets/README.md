@@ -33,3 +33,34 @@ Vault / Doppler / Infisical / cloud secret manager
 short-lived deployment credentials
 machine identity instead of long-lived SSH keys
 ```
+
+---
+
+## Verified GitHub Actions deployment secrets
+
+The verified production deployment uses these GitHub repository secrets:
+
+    RAGFORGE_PRODUCTION_HOST
+    RAGFORGE_PRODUCTION_USER
+    RAGFORGE_PRODUCTION_SSH_PRIVATE_KEY
+
+The verified production deployment uses these GitHub repository variables:
+
+    RAGFORGE_PRODUCTION_SSH_PORT
+    RAGFORGE_REMOTE_DEPLOY_COMMAND
+
+Rules:
+
+    Do not commit private SSH keys.
+    Do not commit real .env files.
+    Do not store application runtime secrets in GitHub Actions.
+    GitHub Actions secrets are used only to connect to the production server.
+    Application runtime secrets remain server-owned.
+
+The local deploy key path is:
+
+    ~/.ssh/ragforge_github_actions_deploy
+
+The private key content is stored only in:
+
+    RAGFORGE_PRODUCTION_SSH_PRIVATE_KEY
