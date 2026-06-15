@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -135,6 +137,7 @@ def validate_workflow_security() -> None:
         'ssh-keyscan',
         'scripts/validation/validate_branch_23_deployment_package.py',
         'pytest -q',
+        'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24',
     ]
     for fragment in required_fragments:
         if fragment not in workflow:
@@ -157,6 +160,61 @@ def validate_compose_hardening() -> None:
     for fragment in required_fragments:
         if fragment not in compose:
             raise AssertionError(f'Hardened compose is missing: {fragment}')
+
+
+def validate_compose_configuration() -> None:
+    env_files = [
+        '.env.app',
+        '.env.postgres',
+        '.env.mongodb',
+        '.env.grafana',
+        '.env.postgres-exporter',
+        '.env.mongodb-exporter',
+    ]
+    created_files = []
+
+    try:
+        for env_file in env_files:
+            target = ROOT / 'docker' / 'env' / env_file
+            source = ROOT / 'docker' / 'env' / f'{env_file}.example'
+            if not target.exists():
+                if not source.exists():
+                    raise AssertionError(f'Missing env example for compose validation: {source}')
+                shutil.copyfile(source, target)
+                created_files.append(target)
+
+        compose_commands = [
+            ['docker', 'compose', '-f', 'docker/docker-compose.production.yml', 'config', '-q'],
+            [
+                'docker',
+                'compose',
+                '-f',
+                'docker/docker-compose.production.yml',
+                '-f',
+                'docker/docker-compose.production.hardened.yml',
+                'config',
+                '-q',
+            ],
+        ]
+
+        for command in compose_commands:
+            result = subprocess.run(
+                command,
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            if result.returncode != 0:
+                joined = ' '.join(command)
+                raise AssertionError(
+                    f'Compose validation failed for: {joined}\n'
+                    f'STDOUT:\n{result.stdout}\n'
+                    f'STDERR:\n{result.stderr}'
+                )
+    finally:
+        for path in created_files:
+            path.unlink(missing_ok=True)
 
 
 def validate_https_config() -> None:
@@ -196,6 +254,7 @@ def main() -> None:
     validate_no_secret_leaks()
     validate_workflow_security()
     validate_compose_hardening()
+    validate_compose_configuration()
     validate_https_config()
     validate_grafana_dashboards()
     validate_scripts_are_executable()

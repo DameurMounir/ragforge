@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APP_DIR="${RAGFORGE_APP_DIR:-/opt/ragforge/app}"
-BACKUP_DIR="${RAGFORGE_BACKUP_DIR:-/opt/ragforge/backups}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_APP_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+APP_DIR="${RAGFORGE_APP_DIR:-$DEFAULT_APP_DIR}"
+RAGFORGE_DEPLOY_ROOT="${RAGFORGE_DEPLOY_ROOT:-$HOME/deployment}"
+BACKUP_DIR="${RAGFORGE_BACKUP_DIR:-$RAGFORGE_DEPLOY_ROOT/backups/ragforge}"
 COMPOSE_FILES="${RAGFORGE_COMPOSE_FILES:--f docker/docker-compose.production.yml -f docker/docker-compose.production.hardened.yml}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 RELEASE_SHA="$(cd "$APP_DIR" && git rev-parse --short HEAD 2>/dev/null || echo unknown)"
