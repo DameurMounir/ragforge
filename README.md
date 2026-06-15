@@ -142,6 +142,7 @@ Continue Milestone 6 with worker and scheduler foundations: background workers, 
 | [`docs/setup/local-development.md`](docs/setup/local-development.md) | Local setup, installation, running commands, and common problems |
 | [`docs/setup/postgres-alembic.md`](docs/setup/postgres-alembic.md) | PostgreSQL and Alembic setup and validation notes |
 | [`docs/setup/production-docker-runtime.md`](docs/setup/production-docker-runtime.md) | Production Docker runtime, observability stack, and validation commands |
+| [`docs/setup/server-deployment-github-actions.md`](docs/setup/server-deployment-github-actions.md) | Server deployment, GitHub Actions CD, SSH deployment, production secrets, verification, and hardening notes |
 | [`docs/api/endpoints.md`](docs/api/endpoints.md) | API endpoints, request examples, and response examples |
 
 ---
@@ -465,12 +466,13 @@ ragforge/
 │   │       └── branches/
 │   │           ├── branch-20-postgres-sqlalchemy-alembic-production-layer.md
 │   │           ├── branch-21-pgvector-provider-indexing.md
-│   │           └── branch-22-production-docker-observability.md
-| [`docs/milestones/milestone-06-production-deployment-workers/branches/branch-23-server-deployment-github-actions.md`](docs/milestones/milestone-06-production-deployment-workers/branches/branch-23-server-deployment-github-actions.md) | Branch 23 server deployment, GitHub Actions CD, production verification, and hardening recap |
+│   │           ├── branch-22-production-docker-observability.md
+│   │           └── branch-23-server-deployment-github-actions.md
 │   ├── setup/
 │   │   ├── local-development.md
 │   │   ├── postgres-alembic.md
-│   │   └── production-docker-runtime.md
+│   │   ├── production-docker-runtime.md
+│   │   └── server-deployment-github-actions.md
 │   └── api/
 │       └── endpoints.md
 │
@@ -1152,7 +1154,7 @@ RAGForge follows these principles:
 
 ## ✅ Current Stable Backend Capability
 
-At the end of Branch 22, RAGForge can:
+At the end of Branch 23, RAGForge can:
 
 ```text
 Upload document
