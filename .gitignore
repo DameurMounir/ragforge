@@ -264,3 +264,9 @@ docker/ragforge_qdrant_data/
 docker/env/.env.*
 !docker/env/.env.*.example
 
+
+# Local deployment backups
+*.backup.*
+*.bak
+docker/*.backup.*
+docker/*.bak
