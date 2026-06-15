@@ -24,15 +24,6 @@ services:
         condition: service_healthy
       qdrant-healthcheck:
         condition: service_completed_successfully
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2g
-        reservations:
-          cpus: '0.50'
-          memory: 512m
-
   nginx:
     read_only: true
     pids_limit: 256
@@ -44,51 +35,18 @@ services:
       - /var/cache/nginx:rw,noexec,nosuid,size=64m
       - /var/run:rw,noexec,nosuid,size=16m
       - /tmp:rw,noexec,nosuid,size=16m
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 256m
-
   mongodb:
     pids_limit: 512
     cpus: '2.0'
     mem_limit: 3g
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 3g
-        reservations:
-          cpus: '0.50'
-          memory: 512m
-
   postgres:
     pids_limit: 512
     cpus: '2.0'
     mem_limit: 3g
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 3g
-        reservations:
-          cpus: '0.50'
-          memory: 512m
-
   qdrant:
     pids_limit: 512
     cpus: '2.0'
     mem_limit: 3g
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 3g
-        reservations:
-          cpus: '0.50'
-          memory: 512m
-
   qdrant-healthcheck:
     image: curlimages/curl:8.16.0
     command:
@@ -153,12 +111,6 @@ services:
     pids_limit: 256
     cpus: '1.0'
     mem_limit: 1g
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1g
-
   grafana:
     volumes:
       - ragforge_grafana_data:/var/lib/grafana
@@ -167,12 +119,6 @@ services:
     pids_limit: 256
     cpus: '1.0'
     mem_limit: 1g
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1g
-
   postgres-exporter:
     pids_limit: 128
     cpus: '0.50'

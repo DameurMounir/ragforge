@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APP_DIR="${RAGFORGE_APP_DIR:-/opt/ragforge/app}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_APP_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+APP_DIR="${RAGFORGE_APP_DIR:-$DEFAULT_APP_DIR}"
+RAGFORGE_DEPLOY_ROOT="${RAGFORGE_DEPLOY_ROOT:-$HOME/deployment}"
 DEPLOY_BRANCH="${RAGFORGE_DEPLOY_BRANCH:-main}"
 COMPOSE_FILES="${RAGFORGE_COMPOSE_FILES:--f docker/docker-compose.production.yml -f docker/docker-compose.production.hardened.yml}"
 HEALTHCHECK_SCRIPT="${RAGFORGE_HEALTHCHECK_SCRIPT:-scripts/deployment/ragforge-healthcheck.sh}"
 BACKUP_SCRIPT="${RAGFORGE_BACKUP_SCRIPT:-scripts/deployment/ragforge-backup.sh}"
-RELEASE_STATE_DIR="${RAGFORGE_RELEASE_STATE_DIR:-deploy/state}"
+RELEASE_STATE_DIR="${RAGFORGE_RELEASE_STATE_DIR:-$RAGFORGE_DEPLOY_ROOT/state/ragforge}"
 ENABLE_IMAGE_LOCK_VERIFY="${RAGFORGE_ENABLE_IMAGE_LOCK_VERIFY:-false}"
 
 cd "$APP_DIR"
