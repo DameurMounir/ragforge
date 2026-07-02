@@ -990,3 +990,16 @@ Branch 18 does not include:
 - production deployment.
 
 These belong to later branches and milestones.
+
+
+## Service authentication
+
+All knowledge and LLM operations require:
+
+```text
+Authorization: Bearer <service credential>
+```
+
+`GET /api/v1/health/` stays unauthenticated for liveness. OpenAPI names the
+scheme `RAGForgeServiceBearer` and declares concrete success schemas for upload,
+process, indexing, search, answer, and health.

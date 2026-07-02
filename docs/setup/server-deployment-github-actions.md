@@ -213,3 +213,20 @@ Known hardening debt:
     docker/docker-compose.production.hardened.yml currently has a pids_limit conflict.
     The verified deployment temporarily uses only docker/docker-compose.production.yml.
     A follow-up branch should align deployment defaults, backup defaults, hardened compose validation, and Node 24 GitHub Actions compatibility.
+
+
+## Service-to-service authentication hardening
+
+Production business endpoints require the `RAGForgeServiceBearer` HTTP bearer scheme.
+The secret is a root-managed file, not a plaintext environment variable.
+
+```bash
+sudo RAGFORGE_SERVICE_AUTH_TOKEN_SOURCE=/etc/ragforge/secrets/service-token \
+  scripts/deployment/ragforge-create-service-token.sh
+```
+
+Set `RAGFORGE_SERVICE_AUTH_TOKEN_SOURCE` in `docker/.env`, mount it read-only,
+and configure the application to expect UID 10001. Health remains public for local
+container liveness. Upload, process, indexing, search, answer, and raw LLM generation
+require the bearer credential. Never print the token or place it in URLs, source, Git,
+Compose environment values, logs, or evidence bundles.

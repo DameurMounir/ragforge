@@ -1,6 +1,8 @@
 # Import lru_cache to cache the settings object.
 # This prevents creating a new Settings instance every time get_settings() is called.
 from functools import lru_cache
+from pathlib import Path
+from typing import Self
 
 # BaseSettings is used to load configuration values from environment variables
 # or from a .env file.
@@ -29,11 +31,11 @@ class Settings(BaseSettings):
     # Upload and file validation settings.
     FILE_MAX_SIZE_MB: int = 20
     FILE_DEFAULT_CHUNK_SIZE: int = 1024 * 1024
-    FILE_ALLOWED_EXTENSIONS: list[str] = ['pdf', 'txt', 'docx']
+    FILE_ALLOWED_EXTENSIONS: list[str] = ["pdf", "txt", "docx"]
     FILE_ALLOWED_MIME_TYPES: list[str] = [
-        'application/pdf',
-        'text/plain',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        "application/pdf",
+        "text/plain",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ]
 
     # Branch 11 / MongoDB auth and metadata persistence settings.
@@ -43,8 +45,8 @@ class Settings(BaseSettings):
     MONGODB_URL: str
 
     # LLM provider settings.
-    LLM_PROVIDER: str = 'fake'
-    LLM_DEFAULT_MODEL: str = 'fake-ragforge-model'
+    LLM_PROVIDER: str = "fake"
+    LLM_DEFAULT_MODEL: str = "fake-ragforge-model"
     LLM_TEMPERATURE: float = 0.2
     LLM_MAX_OUTPUT_TOKENS: int = 512
     LLM_TIMEOUT_SECONDS: int = 60
@@ -54,37 +56,37 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: str | None = None
 
     # Vector DB provider settings.
-    VECTOR_DB_PROVIDER: str = 'qdrant'
+    VECTOR_DB_PROVIDER: str = "qdrant"
 
     # Qdrant settings.
     # QDRANT_VECTOR_SIZE is optional and acts only as an equality guard.
     # The effective vector size is always resolved from EMBEDDING_VECTOR_SIZE.
-    QDRANT_MODE: str = 'server'
-    QDRANT_URL: str = 'http://localhost:6333'
+    QDRANT_MODE: str = "server"
+    QDRANT_URL: str = "http://localhost:6333"
     QDRANT_API_KEY: str | None = None
-    QDRANT_LOCAL_PATH: str = 'storage/vector_db/qdrant'
-    QDRANT_COLLECTION_NAME: str = 'ragforge_chunks'
+    QDRANT_LOCAL_PATH: str = "storage/vector_db/qdrant"
+    QDRANT_COLLECTION_NAME: str = "ragforge_chunks"
     QDRANT_VECTOR_SIZE: int | None = None
-    QDRANT_DISTANCE: str = 'cosine'
+    QDRANT_DISTANCE: str = "cosine"
     QDRANT_PREFER_GRPC: bool = False
 
     # Embedding provider settings.
     # EMBEDDING_VECTOR_SIZE is required because it is the source of truth for
     # Qdrant and PgVector dimensions. Do not hardcode model dimensions in code.
-    EMBEDDING_PROVIDER: str = 'fake'
-    EMBEDDING_MODEL: str = 'fake-embedding-model'
+    EMBEDDING_PROVIDER: str = "fake"
+    EMBEDDING_MODEL: str = "fake-embedding-model"
     EMBEDDING_VECTOR_SIZE: int
     EMBEDDING_BATCH_SIZE: int = 32
-    FAKE_EMBEDDING_MODEL: str = 'fake-embedding-model'
+    FAKE_EMBEDDING_MODEL: str = "fake-embedding-model"
 
     EMBEDDING_OPENAI_API_KEY: str | None = None
     EMBEDDING_OPENAI_BASE_URL: str | None = None
 
     # Generic vector indexing settings.
     # VECTOR_DB_VECTOR_SIZE is optional and acts only as an equality guard.
-    VECTOR_DB_COLLECTION_NAME: str = 'ragforge_chunks'
+    VECTOR_DB_COLLECTION_NAME: str = "ragforge_chunks"
     VECTOR_DB_VECTOR_SIZE: int | None = None
-    VECTOR_DB_DISTANCE: str = 'cosine'
+    VECTOR_DB_DISTANCE: str = "cosine"
 
     # Semantic search settings.
     SEARCH_DEFAULT_LIMIT: int = 5
@@ -111,11 +113,11 @@ class Settings(BaseSettings):
     RAG_ENABLE_CITATION_VALIDATION: bool = True
 
     # Branch 20 — PostgreSQL + SQLAlchemy + Alembic Production Persistence Layer.
-    POSTGRES_USER: str = 'ragforge'
-    POSTGRES_PASSWORD: str = 'ragforge_password_change_me'
-    POSTGRES_HOST: str = 'localhost'
+    POSTGRES_USER: str = "ragforge"
+    POSTGRES_PASSWORD: str = "ragforge_password_change_me"
+    POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5433
-    POSTGRES_DB: str = 'ragforge'
+    POSTGRES_DB: str = "ragforge"
     POSTGRES_ECHO: bool = False
     POSTGRES_POOL_SIZE: int = 5
     POSTGRES_MAX_OVERFLOW: int = 10
@@ -125,11 +127,11 @@ class Settings(BaseSettings):
     # Branch 21 — PgVector provider settings.
     # No embedding model or vector dimension is hardcoded in provider/factory code.
     # PGVECTOR_VECTOR_SIZE is optional and must match EMBEDDING_VECTOR_SIZE when set.
-    PGVECTOR_TABLE_NAME: str = 'vector_records'
+    PGVECTOR_TABLE_NAME: str = "vector_records"
     PGVECTOR_VECTOR_SIZE: int | None = None
-    PGVECTOR_DISTANCE: str = 'cosine'
-    PGVECTOR_INDEX_TYPE: str = 'hnsw'
-    PGVECTOR_INDEX_VECTOR_TYPE: str = 'vector'
+    PGVECTOR_DISTANCE: str = "cosine"
+    PGVECTOR_INDEX_TYPE: str = "hnsw"
+    PGVECTOR_INDEX_VECTOR_TYPE: str = "vector"
     PGVECTOR_HNSW_M: int = 16
     PGVECTOR_HNSW_EF_CONSTRUCTION: int = 64
     PGVECTOR_HNSW_EF_SEARCH: int = 40
@@ -139,9 +141,17 @@ class Settings(BaseSettings):
     PGVECTOR_AUTO_CREATE_INDEX: bool = True
     PGVECTOR_CREATE_EXTENSION_ON_STARTUP: bool = True
 
+    # Service-to-service authentication.
+    # Production must enable this boundary and load the bearer token from a file.
+    SERVICE_AUTH_ENABLED: bool = False
+    SERVICE_AUTH_TOKEN_FILE: str | None = None
+    SERVICE_AUTH_TOKEN_EXPECTED_OWNER_UID: int | None = None
+    SERVICE_AUTH_MIN_TOKEN_BYTES: int = 32
+    SERVICE_AUTH_MAX_TOKEN_BYTES: int = 4096
+
     # Storage settings.
-    UPLOAD_DIR: str = 'storage/uploads'
-    PROJECT_DOCUMENTS_DIR: str = 'documents'
+    UPLOAD_DIR: str = "storage/uploads"
+    PROJECT_DOCUMENTS_DIR: str = "documents"
 
     @property
     def VECTOR_DB_EFFECTIVE_VECTOR_SIZE(self) -> int:
@@ -154,7 +164,7 @@ class Settings(BaseSettings):
         - If VECTOR_DB_VECTOR_SIZE is set, it must equal EMBEDDING_VECTOR_SIZE.
         """
         return self._resolve_optional_vector_size_guard(
-            guard_name='VECTOR_DB_VECTOR_SIZE',
+            guard_name="VECTOR_DB_VECTOR_SIZE",
             guard_value=self.VECTOR_DB_VECTOR_SIZE,
         )
 
@@ -169,7 +179,7 @@ class Settings(BaseSettings):
         - If QDRANT_VECTOR_SIZE is set, it must equal EMBEDDING_VECTOR_SIZE.
         """
         return self._resolve_optional_vector_size_guard(
-            guard_name='QDRANT_VECTOR_SIZE',
+            guard_name="QDRANT_VECTOR_SIZE",
             guard_value=self.QDRANT_VECTOR_SIZE,
         )
 
@@ -184,7 +194,7 @@ class Settings(BaseSettings):
         - If PGVECTOR_VECTOR_SIZE is set, it must equal EMBEDDING_VECTOR_SIZE.
         """
         return self._resolve_optional_vector_size_guard(
-            guard_name='PGVECTOR_VECTOR_SIZE',
+            guard_name="PGVECTOR_VECTOR_SIZE",
             guard_value=self.PGVECTOR_VECTOR_SIZE,
         )
 
@@ -199,21 +209,21 @@ class Settings(BaseSettings):
         embedding_vector_size = int(self.EMBEDDING_VECTOR_SIZE)
 
         if embedding_vector_size <= 0:
-            raise ValueError('EMBEDDING_VECTOR_SIZE must be greater than zero.')
+            raise ValueError("EMBEDDING_VECTOR_SIZE must be greater than zero.")
 
         if guard_value is None:
             return embedding_vector_size
 
         if int(guard_value) != embedding_vector_size:
             raise ValueError(
-                f'{guard_name} must match EMBEDDING_VECTOR_SIZE. '
-                f'Got {guard_name}={guard_value} and '
-                f'EMBEDDING_VECTOR_SIZE={embedding_vector_size}.'
+                f"{guard_name} must match EMBEDDING_VECTOR_SIZE. "
+                f"Got {guard_name}={guard_value} and "
+                f"EMBEDDING_VECTOR_SIZE={embedding_vector_size}."
             )
 
         return embedding_vector_size
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_branch_21_vector_settings(self):
         """
         Validate Branch 21 vector configuration once when Settings is created.
@@ -237,71 +247,109 @@ class Settings(BaseSettings):
             self.PGVECTOR_INDEX_VECTOR_TYPE.lower().strip()
         )
 
-        allowed_vector_db_providers = {'qdrant', 'pgvector'}
+        allowed_vector_db_providers = {"qdrant", "pgvector"}
         if self.VECTOR_DB_PROVIDER not in allowed_vector_db_providers:
             raise ValueError(
-                'VECTOR_DB_PROVIDER must be one of: '
-                f'{sorted(allowed_vector_db_providers)}. '
-                f'Got {self.VECTOR_DB_PROVIDER!r}.'
+                "VECTOR_DB_PROVIDER must be one of: "
+                f"{sorted(allowed_vector_db_providers)}. "
+                f"Got {self.VECTOR_DB_PROVIDER!r}."
             )
 
-        allowed_distances = {'cosine', 'euclid', 'dot'}
+        allowed_distances = {"cosine", "euclid", "dot"}
         if self.PGVECTOR_DISTANCE not in allowed_distances:
             raise ValueError(
-                'PGVECTOR_DISTANCE must be one of: '
-                f'{sorted(allowed_distances)}. '
-                f'Got {self.PGVECTOR_DISTANCE!r}.'
+                "PGVECTOR_DISTANCE must be one of: "
+                f"{sorted(allowed_distances)}. "
+                f"Got {self.PGVECTOR_DISTANCE!r}."
             )
 
         if self.QDRANT_DISTANCE not in allowed_distances:
             raise ValueError(
-                'QDRANT_DISTANCE must be one of: '
-                f'{sorted(allowed_distances)}. '
-                f'Got {self.QDRANT_DISTANCE!r}.'
+                "QDRANT_DISTANCE must be one of: "
+                f"{sorted(allowed_distances)}. "
+                f"Got {self.QDRANT_DISTANCE!r}."
             )
 
         if self.VECTOR_DB_DISTANCE not in allowed_distances:
             raise ValueError(
-                'VECTOR_DB_DISTANCE must be one of: '
-                f'{sorted(allowed_distances)}. '
-                f'Got {self.VECTOR_DB_DISTANCE!r}.'
+                "VECTOR_DB_DISTANCE must be one of: "
+                f"{sorted(allowed_distances)}. "
+                f"Got {self.VECTOR_DB_DISTANCE!r}."
             )
 
-        allowed_pgvector_index_types = {'hnsw', 'ivfflat'}
+        allowed_pgvector_index_types = {"hnsw", "ivfflat"}
         if self.PGVECTOR_INDEX_TYPE not in allowed_pgvector_index_types:
             raise ValueError(
-                'PGVECTOR_INDEX_TYPE must be one of: '
-                f'{sorted(allowed_pgvector_index_types)}. '
-                f'Got {self.PGVECTOR_INDEX_TYPE!r}.'
+                "PGVECTOR_INDEX_TYPE must be one of: "
+                f"{sorted(allowed_pgvector_index_types)}. "
+                f"Got {self.PGVECTOR_INDEX_TYPE!r}."
             )
 
-        allowed_pgvector_index_vector_types = {'vector', 'halfvec'}
+        allowed_pgvector_index_vector_types = {"vector", "halfvec"}
         if self.PGVECTOR_INDEX_VECTOR_TYPE not in allowed_pgvector_index_vector_types:
             raise ValueError(
-                'PGVECTOR_INDEX_VECTOR_TYPE must be one of: '
-                f'{sorted(allowed_pgvector_index_vector_types)}. '
-                f'Got {self.PGVECTOR_INDEX_VECTOR_TYPE!r}.'
+                "PGVECTOR_INDEX_VECTOR_TYPE must be one of: "
+                f"{sorted(allowed_pgvector_index_vector_types)}. "
+                f"Got {self.PGVECTOR_INDEX_VECTOR_TYPE!r}."
             )
 
         if self.PGVECTOR_HNSW_M <= 0:
-            raise ValueError('PGVECTOR_HNSW_M must be greater than zero.')
+            raise ValueError("PGVECTOR_HNSW_M must be greater than zero.")
 
         if self.PGVECTOR_HNSW_EF_CONSTRUCTION <= 0:
-            raise ValueError(
-                'PGVECTOR_HNSW_EF_CONSTRUCTION must be greater than zero.'
-            )
+            raise ValueError("PGVECTOR_HNSW_EF_CONSTRUCTION must be greater than zero.")
 
         if self.PGVECTOR_HNSW_EF_SEARCH <= 0:
-            raise ValueError('PGVECTOR_HNSW_EF_SEARCH must be greater than zero.')
+            raise ValueError("PGVECTOR_HNSW_EF_SEARCH must be greater than zero.")
 
         if self.PGVECTOR_IVFFLAT_LISTS <= 0:
-            raise ValueError('PGVECTOR_IVFFLAT_LISTS must be greater than zero.')
+            raise ValueError("PGVECTOR_IVFFLAT_LISTS must be greater than zero.")
 
         if self.PGVECTOR_IVFFLAT_PROBES <= 0:
-            raise ValueError('PGVECTOR_IVFFLAT_PROBES must be greater than zero.')
+            raise ValueError("PGVECTOR_IVFFLAT_PROBES must be greater than zero.")
 
         if self.PGVECTOR_INDEX_MIN_RECORDS < 0:
-            raise ValueError('PGVECTOR_INDEX_MIN_RECORDS must be >= 0.')
+            raise ValueError("PGVECTOR_INDEX_MIN_RECORDS must be >= 0.")
+
+        return self
+
+    @property
+    def is_production_environment(self) -> bool:
+        normalized = self.APP_ENV.strip().lower().replace("_", "-")
+        return (
+            normalized in {"prod", "production"}
+            or normalized.startswith("production-")
+            or normalized.endswith("-production")
+        )
+
+    @model_validator(mode="after")
+    def validate_service_auth_settings(self) -> Self:
+        if self.SERVICE_AUTH_MIN_TOKEN_BYTES < 32:
+            raise ValueError("SERVICE_AUTH_MIN_TOKEN_BYTES must be at least 32.")
+        if self.SERVICE_AUTH_MAX_TOKEN_BYTES < self.SERVICE_AUTH_MIN_TOKEN_BYTES:
+            raise ValueError(
+                "SERVICE_AUTH_MAX_TOKEN_BYTES must be greater than or equal to the minimum."
+            )
+        if self.SERVICE_AUTH_MAX_TOKEN_BYTES > 65536:
+            raise ValueError("SERVICE_AUTH_MAX_TOKEN_BYTES is unreasonably large.")
+
+        if self.is_production_environment and not self.SERVICE_AUTH_ENABLED:
+            raise ValueError("Production requires SERVICE_AUTH_ENABLED=true.")
+
+        if self.SERVICE_AUTH_ENABLED:
+            if not self.SERVICE_AUTH_TOKEN_FILE:
+                raise ValueError(
+                    "Enabled service authentication requires a token file."
+                )
+            if not Path(self.SERVICE_AUTH_TOKEN_FILE).is_absolute():
+                raise ValueError("SERVICE_AUTH_TOKEN_FILE must be an absolute path.")
+            if (
+                self.SERVICE_AUTH_TOKEN_EXPECTED_OWNER_UID is None
+                or self.SERVICE_AUTH_TOKEN_EXPECTED_OWNER_UID < 0
+            ):
+                raise ValueError(
+                    "Enabled service authentication requires a non-negative expected owner UID."
+                )
 
         return self
 
@@ -309,20 +357,20 @@ class Settings(BaseSettings):
 
     # Branch 22 — Prometheus / observability settings.
     METRICS_ENABLED: bool = True
-    METRICS_PATH: str = '/metrics'
+    METRICS_PATH: str = "/metrics"
     METRICS_INCLUDE_IN_SCHEMA: bool = False
     METRICS_SKIP_PATHS: list[str] = [
-        '/metrics',
-        '/docs',
-        '/redoc',
-        '/openapi.json',
-        '/favicon.ico',
+        "/metrics",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/favicon.ico",
     ]
 
     model_config = SettingsConfigDict(
-        env_file='.env',
-        env_file_encoding='utf-8',
-        extra='ignore',
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
 

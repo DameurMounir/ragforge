@@ -2,6 +2,7 @@ name: Deploy RAGForge Production Runtime
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches:
       - main
@@ -45,12 +46,17 @@ jobs:
         run: |
           python scripts/validation/validate_branch_23_deployment_package.py
 
+      - name: Run service-auth and response-schema validation
+        run: |
+          python scripts/validation/validate_service_auth_response_schemas.py
+
       - name: Run tests
         run: |
           pytest -q
 
   deploy-production:
     name: Deploy to production server
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
     needs: quality-gates
     runs-on: ubuntu-latest
     timeout-minutes: 30

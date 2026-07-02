@@ -1600,3 +1600,10 @@ Architecture audit:
 AI engineer and system builder focused on production-grade RAG, agentic AI systems, vector databases, observability, and deployable AI architectures.
 
 My objective is to build practical, robust, and scalable AI systems that can evolve from learning projects into real products, client solutions, and future agentic platforms.
+
+
+## 28F coordinated production boundary hardening
+
+RAGForge business endpoints now use file-backed service bearer authentication and
+concrete success response models. See
+[`docs/security/service-authentication-and-response-schemas.md`](docs/security/service-authentication-and-response-schemas.md).
