@@ -28,6 +28,7 @@ services:
       - '8000'
     volumes:
       - ragforge_uploads:/app/storage/uploads
+      - ${RAGFORGE_SERVICE_AUTH_TOKEN_SOURCE:?set RAGFORGE_SERVICE_AUTH_TOKEN_SOURCE}:/run/ragforge-secrets/service-token:ro
     depends_on:
       ragforge-migrations:
         condition: service_completed_successfully

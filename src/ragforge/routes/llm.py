@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Security, status
 from fastapi.responses import JSONResponse
 
 from src.ragforge.core.config import Settings, get_settings
@@ -12,20 +12,22 @@ from src.ragforge.providers.llm.schemas import (
     LLMGenerationRequest,
     LLMGenerationResponse,
 )
+from src.ragforge.security.service_auth import require_service_identity
 from src.ragforge.services.llm_service import LLMService
 
 
-logger = logging.getLogger('uvicorn.error')
+logger = logging.getLogger("uvicorn.error")
 
 
 llm_router = APIRouter(
-    prefix='/api/v1/llm',
-    tags=['llm'],
+    prefix="/api/v1/llm",
+    tags=["llm"],
+    dependencies=[Security(require_service_identity)],
 )
 
 
 @llm_router.post(
-    '/generate',
+    "/generate",
     response_model=LLMGenerationResponse,
 )
 async def generate_llm_response(
@@ -45,31 +47,31 @@ async def generate_llm_response(
         return await service.generate(request=generation_request)
 
     except LLMConfigurationError as error:
-        logger.error(f'LLM configuration error: {error}')
+        logger.error(f"LLM configuration error: {error}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
-                'signal': 'llm_configuration_error',
-                'message': str(error),
+                "signal": "llm_configuration_error",
+                "message": str(error),
             },
         )
 
     except LLMProviderError as error:
-        logger.error(f'LLM provider error: {error}')
+        logger.error(f"LLM provider error: {error}")
         return JSONResponse(
             status_code=status.HTTP_502_BAD_GATEWAY,
             content={
-                'signal': 'llm_provider_error',
-                'message': str(error),
+                "signal": "llm_provider_error",
+                "message": str(error),
             },
         )
 
     except Exception as error:
-        logger.exception(f'Unexpected LLM generation error: {error}')
+        logger.exception(f"Unexpected LLM generation error: {error}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
-                'signal': 'llm_generation_failed',
-                'message': str(error),
+                "signal": "llm_generation_failed",
+                "message": str(error),
             },
         )

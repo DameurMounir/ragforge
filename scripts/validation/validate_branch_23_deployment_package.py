@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -183,6 +184,12 @@ def validate_compose_configuration() -> None:
                 shutil.copyfile(source, target)
                 created_files.append(target)
 
+        compose_environment = os.environ.copy()
+        compose_environment.setdefault(
+            "RAGFORGE_SERVICE_AUTH_TOKEN_SOURCE",
+            "/tmp/ragforge-service-token",
+        )
+
         compose_commands = [
             ['docker', 'compose', '-f', 'docker/docker-compose.production.yml', 'config', '-q'],
             [
@@ -204,6 +211,7 @@ def validate_compose_configuration() -> None:
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                env=compose_environment,
             )
             if result.returncode != 0:
                 joined = ' '.join(command)
