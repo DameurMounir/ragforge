@@ -40,6 +40,11 @@ async def rank_asset_revision(project_id: str, request: SemanticSearchRequest, *
         if characters > request.max_corpus_characters or len(chunks) >= request.max_corpus_chunks:
             return _error(413, 'Full asset exceeds the requested corpus budget.')
         metadata = chunk.chunk_metadata
+        if (
+            chunk.id is None or not chunk.embedded or chunk.chunk_project_id != project.id
+            or chunk.chunk_asset_id != asset.id or metadata.get('source_revision') != request.source_revision
+        ):
+            return _error(409, 'Indexed passage does not match the requested asset revision.')
         start, end, page = (metadata.get(k) for k in ('char_start', 'char_end', 'page_number'))
         if (
             type(start) is not int or type(end) is not int or type(page) is not int
@@ -84,7 +89,11 @@ async def rank_asset_revision(project_id: str, request: SemanticSearchRequest, *
         metadata = {}
         if include_metadata:
             metadata = {
-                **chunk.chunk_metadata,
+                'source_revision': request.source_revision,
+                'page_number': chunk.chunk_metadata['page_number'],
+                'char_start': chunk.chunk_metadata['char_start'],
+                'char_end': chunk.chunk_metadata['char_end'],
+                'passage_sha256': chunk.chunk_metadata['passage_sha256'],
                 'ranking_method': method, 'raw_rank_score': hit.score,
                 'lexical_rank': hit.lexical_rank, 'dense_rank': hit.dense_rank,
             }

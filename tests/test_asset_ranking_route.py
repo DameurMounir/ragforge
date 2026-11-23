@@ -127,3 +127,32 @@ def test_matching_old_chunks_cannot_establish_missing_owner_revision(ranked_api)
         result = post(dict(body, ranking_method=method))
         assert result.status_code == 409
         assert 'results' not in result.json()
+
+
+def test_ranked_metadata_returns_only_verified_citation_and_rank_fields(ranked_api):
+    post, body, _, chunks, _ = ranked_api
+    chunks[0].chunk_metadata.update({
+        'author': 'PDF author', 'file_path': '/stored/manual.pdf',
+        'source': '/stored/manual.pdf', 'producer': 'PDF creator',
+    })
+    response = post(body)
+    assert response.status_code == 200
+    hit, = response.json()['results']
+    assert set(hit['metadata']) == {
+        'source_revision', 'page_number', 'char_start', 'char_end', 'passage_sha256',
+        'ranking_method', 'raw_rank_score', 'lexical_rank', 'dense_rank',
+    }
+
+
+@pytest.mark.parametrize('field', ['chunk_project_id', 'chunk_asset_id', 'source_revision', 'embedded'])
+def test_ranked_rows_must_match_owner_scope_and_revision(ranked_api, field):
+    post, body, _, chunks, _ = ranked_api
+    if field == 'source_revision':
+        chunks[0].chunk_metadata[field] = '0' * 64
+    elif field == 'embedded':
+        chunks[0].embedded = False
+    else:
+        setattr(chunks[0], field, ObjectId())
+    response = post(body)
+    assert response.status_code == 409
+    assert 'results' not in response.json()

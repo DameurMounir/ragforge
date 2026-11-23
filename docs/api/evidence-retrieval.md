@@ -11,6 +11,8 @@ Upload and process the document using the documents API, then index its chunks. 
 
 Existing uploads without a digest can be processed using the bytes available at reprocessing time. Reprocessing and reindexing are necessary for older passages to acquire this metadata. A passage location refers to the extracted Unicode text, which can differ from the raw byte offsets or the visual reading order in a PDF.
 
+The default upload configuration also accepts DOCX for storage. The extraction pipeline supports TXT and PDF. To compare a Word document, export it to PDF, upload that PDF and use its revision and page coordinates.
+
 ## Compare a selected pair
 
 For each source selected by the application, verify its current authorization and resolve the expected project, asset and revision. Perform a separate asset-scoped search for each side, with text and metadata included. Check the returned project mapping, asset, revision and passage digest before using the text. Repeat the authorization and source check when opening a citation or recording a review. Treat a missing side as incomplete.
@@ -24,6 +26,8 @@ The default dense route preserves its current score and wire format. `SEARCH_REQ
 This policy verifies source attribution and copied wording. A downstream application still owns the interpretation of values, exceptions, document versions, currency and permissions. The default policy checks citation numbers. A wholly unknown citation now produces abstention instead of an unsupported statement with its citation stripped.
 
 ## Retrying partial vector writes
+
+Document processing publishes an asset's passage count only after the chunk store acknowledges the full extracted document. An incomplete write leaves the asset failed. Repeating processing for that asset replaces its partial rows before indexing.
 
 When a vector provider acknowledges only a count, a short count cannot identify individual successful records. The service marks only a fully acknowledged batch as indexed. Retry unconfirmed chunks with the same vector record IDs. Ordinary incremental retries are covered. The existing explicit reset operation deletes scoped vectors before rebuilding and must be planned separately.
 
@@ -48,3 +52,5 @@ Send a service-authenticated `POST /api/v1/search/{project_id}` with the expecte
 Both budgets apply to the entire pinned document. The service accepts 1–256 chunks, 1–1,000,000 extracted Unicode characters and queries up to 4,096 characters for these modes. The result limit also obeys the configured server maximum. Requests over either corpus budget receive HTTP 413. An incomplete index, missing current asset digest, mismatched revision or changed asset receives HTTP 409. For a historical upload lacking an owner-bound digest, upload the verified source as a new asset, process and index it, then select the new identity. Historical chunk metadata alone cannot activate the ranked modes.
 
 BM25 searches all eligible passages. Its wire score is `BM25 / (1 + BM25)`. RRF uses the sum of `1 / (60 + rank)` over each input list in which the passage occurred. It constrains the dense lookup by project, asset, revision, provider and model. With metadata enabled, results include `raw_rank_score`, `lexical_rank` and `dense_rank`. A missing rank is null. The response signal names the method even when metadata is hidden. These scores express relative ranking within the requested corpus. A `min_score` supplied with either mode receives HTTP 422. Omit all ranked options for the existing dense search.
+
+Ranked results expose the five citation fields in the table above and four ranking fields (`ranking_method`, `raw_rank_score`, `lexical_rank`, `dense_rank`). Loader-specific attributes such as server file paths and PDF author information stay outside this projection.
