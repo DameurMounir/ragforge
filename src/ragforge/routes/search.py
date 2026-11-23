@@ -4,7 +4,9 @@ from fastapi.responses import JSONResponse
 from src.ragforge.core.config import get_settings
 from src.ragforge.schemas.search import SemanticSearchRequest, SemanticSearchResponse
 from src.ragforge.security.service_auth import require_service_identity
+from src.ragforge.services.asset_ranking_service import rank_asset_revision
 from src.ragforge.services.semantic_search_service import SemanticSearchService
+from src.ragforge.stores.mongodb import AssetStore, ChunkStore
 from src.ragforge.stores.mongodb.project_store import ProjectStore
 
 
@@ -24,13 +26,18 @@ async def semantic_search(
     """Return ranked evidence from indexed project chunks."""
 
     project_store = await ProjectStore.create_instance(db_client=request.app.db_client)
-    status_code, response = await SemanticSearchService(
-        settings=get_settings()
-    ).search_project_chunks(
-        project_id=project_id,
-        search_request=search_request,
-        project_store=project_store,
-    )
+    if search_request.ranking_method == 'dense':
+        status_code, response = await SemanticSearchService(
+            settings=get_settings()
+        ).search_project_chunks(
+            project_id=project_id, search_request=search_request, project_store=project_store,
+        )
+    else:
+        status_code, response = await rank_asset_revision(
+            project_id, search_request, settings=get_settings(), project_store=project_store,
+            asset_store=AssetStore(db_client=request.app.db_client),
+            chunk_store=ChunkStore(db_client=request.app.db_client),
+        )
     if 200 <= status_code < 300:
         return SemanticSearchResponse.model_validate(response)
     return JSONResponse(status_code=status_code, content=response)

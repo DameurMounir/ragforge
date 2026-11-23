@@ -1,4 +1,6 @@
+import hashlib
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from langchain_community.document_loaders import PyMuPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -135,6 +137,7 @@ class DocumentProcessingService(BaseService):
             chunk_size=chunk_size,
             chunk_overlap=overlap_size,
             length_function=len,
+            add_start_index=True,
         )
 
         content_texts = [
@@ -143,8 +146,8 @@ class DocumentProcessingService(BaseService):
         ]
 
         content_metadata = [
-            record.metadata or {}
-            for record in document_content
+            {**(record.metadata or {}), 'page_number': page_number}
+            for page_number, record in enumerate(document_content, start=1)
         ]
 
         return text_splitter.create_documents(
@@ -196,6 +199,7 @@ class DocumentProcessingService(BaseService):
             document_path=document_path,
             chunk_size=chunk_size,
             overlap_size=overlap_size,
+            expected_revision=asset.asset_metadata.get('source_revision'),
         )
 
     def process_document_path(
@@ -203,14 +207,29 @@ class DocumentProcessingService(BaseService):
         document_path: Path,
         chunk_size: int = 1000,
         overlap_size: int = 200,
+        expected_revision: str | None = None,
     ) -> list[dict]:
         """
         Process a physical document path and return JSON-ready chunks.
         """
 
-        document_content = self.load_document_content(
-            document_path=document_path,
-        )
+        # Both file-based loaders must read the exact bytes whose digest is cited.
+        # A private snapshot also isolates extraction from a concurrent replacement.
+        digest = hashlib.sha256()
+        with TemporaryDirectory() as temporary_directory:
+            snapshot = Path(temporary_directory) / ('source' + document_path.suffix)
+            with document_path.open('rb') as source, snapshot.open('wb') as target:
+                while block := source.read(1024 * 1024):
+                    target.write(block)
+                    digest.update(block)
+            revision = digest.hexdigest()
+            if expected_revision is not None and expected_revision != revision:
+                raise ValueError('Document bytes differ from the uploaded revision.')
+            document_content = self.load_document_content(document_path=snapshot)
+        for record in document_content:
+            for key in ('source', 'file_path'):
+                if key in record.metadata:
+                    record.metadata[key] = str(document_path)
 
         chunks = self.split_document_content(
             document_content=document_content,
@@ -218,11 +237,23 @@ class DocumentProcessingService(BaseService):
             overlap_size=overlap_size,
         )
 
-        return [
-            {
+        result = []
+        for index, chunk in enumerate(chunks, start=1):
+            page_number = chunk.metadata['page_number']
+            page_text = document_content[page_number - 1].page_content
+            start = chunk.metadata['start_index']
+            end = start + len(chunk.page_content)
+            if start < 0 or page_text[start:end] != chunk.page_content:
+                raise ValueError('Extracted passage cannot be located on its source page.')
+            result.append({
                 'chunk_index': index,
                 'content': chunk.page_content,
-                'metadata': chunk.metadata or {},
-            }
-            for index, chunk in enumerate(chunks, start=1)
-        ]
+                'metadata': {
+                    **chunk.metadata,
+                    'source_revision': revision,
+                    'char_start': start,
+                    'char_end': end,
+                    'passage_sha256': hashlib.sha256(chunk.page_content.encode('utf-8')).hexdigest(),
+                },
+            })
+        return result

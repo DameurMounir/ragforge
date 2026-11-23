@@ -69,7 +69,6 @@ class IndexingService(BaseService):
         indexed_results: list[IndexedChunkResult] = []
         failed_chunks = 0
         skipped_chunks = 0
-        chunks_to_mark: list[dict] = []
 
         await self.vector_db_service.connect()
         try:
@@ -146,36 +145,35 @@ class IndexingService(BaseService):
                         )
                     )
 
-                    indexed_results.append(
-                        IndexedChunkResult(
-                            chunk_id=str(chunk.id),
-                            asset_id=str(chunk.chunk_asset_id),
-                            vector_id=vector_id,
-                            chunk_order=chunk.chunk_order,
-                            embedding_model=embedding_response.model,
-                        )
-                    )
-
-                    chunks_to_mark.append(
-                        {
-                            'chunk_id': chunk.id,
-                            'embedding_model': embedding_response.model,
-                            'vector_id': vector_id,
-                        }
-                    )
-
                 inserted_count = await self.vector_db_service.insert_many(
                     collection_name=collection_name,
                     records=vector_records,
                     batch_size=batch_size,
                 )
+                # A partial count does not identify which record IDs were written.
+                # Leave the batch eligible for retry with the same upsert keys.
+                if type(inserted_count) is not int or inserted_count != len(vector_records):
+                    failed_chunks += len(vector_records)
+                    continue
 
-                if inserted_count != len(vector_records):
-                    failed_chunks += len(vector_records) - inserted_count
-
-            if chunks_to_mark:
-                await chunk_store.mark_chunks_embedded(
-                    indexed_chunks=chunks_to_mark
+                chunks_to_mark = [
+                    {
+                        'chunk_id': chunk.id,
+                        'embedding_model': embedding_response.model,
+                        'vector_id': str(chunk.id),
+                    }
+                    for chunk in valid_chunks
+                ]
+                await chunk_store.mark_chunks_embedded(indexed_chunks=chunks_to_mark)
+                indexed_results.extend(
+                    IndexedChunkResult(
+                        chunk_id=str(chunk.id),
+                        asset_id=str(chunk.chunk_asset_id),
+                        vector_id=str(chunk.id),
+                        chunk_order=chunk.chunk_order,
+                        embedding_model=embedding_response.model,
+                    )
+                    for chunk in valid_chunks
                 )
         finally:
             await self.vector_db_service.close()

@@ -161,8 +161,11 @@ class PipelineService(BaseService):
                 inserted_count = await chunk_store.insert_many_chunks(
                     chunks=data_chunks
                 )
-
+                if type(inserted_count) is not int or not 0 <= inserted_count <= len(data_chunks):
+                    raise ValueError('Chunk storage returned an invalid insertion count.')
                 total_inserted_chunks += inserted_count
+                if inserted_count != len(data_chunks):
+                    raise ValueError('Chunk storage did not acknowledge the full extracted document.')
 
                 await asset_store.update_asset_processing_result(
                     asset_id=asset.id,

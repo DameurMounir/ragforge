@@ -72,31 +72,13 @@ class SemanticSearchService(BaseService):
             else self.settings.SEARCH_INCLUDE_METADATA_DEFAULT
         )
 
-        embedding_response = self.embedding_provider.embed_texts(
-            EmbeddingRequest(
-                texts=[search_request.query],
-                model=self.settings.EMBEDDING_MODEL,
-            )
-        )
-        query_vector = embedding_response.embeddings[0]
-        actual_embedding_model = embedding_response.model
-
         filters = {'project_id': str(project.id)}
         if search_request.asset_id is not None:
             filters['asset_id'] = search_request.asset_id
-
         collection_name = self.settings.VECTOR_DB_COLLECTION_NAME
-
-        await self.vector_db_service.connect()
-        try:
-            vector_results = await self.vector_db_service.search_by_vector(
-                collection_name=collection_name,
-                vector=query_vector,
-                limit=limit,
-                filters=filters,
-            )
-        finally:
-            await self.vector_db_service.close()
+        actual_embedding_model, vector_results = await self.dense_candidates(
+            search_request.query, filters=filters, limit=limit
+        )
 
         evidence_results: list[SearchEvidence] = []
         for result in vector_results:
@@ -140,3 +122,35 @@ class SemanticSearchService(BaseService):
             'total_results': len(evidence_results),
             'results': [evidence.model_dump() for evidence in evidence_results],
         }
+
+    async def dense_candidates(self, query: str, *, filters: dict, limit: int, strict_space: bool = False):
+        """Search bounded owner-selected vector metadata before candidate selection."""
+        embedding_response = self.embedding_provider.embed_texts(
+            EmbeddingRequest(
+                texts=[query],
+                model=self.settings.EMBEDDING_MODEL,
+            )
+        )
+        query_vector = embedding_response.embeddings[0]
+        actual_embedding_model = embedding_response.model
+
+        if strict_space or getattr(self.settings, 'SEARCH_REQUIRE_MATCHING_EMBEDDING_SPACE', False):
+            filters.update({
+                'embedding_model': actual_embedding_model,
+                'embedding_provider': self.settings.EMBEDDING_PROVIDER,
+            })
+
+        collection_name = self.settings.VECTOR_DB_COLLECTION_NAME
+
+        await self.vector_db_service.connect()
+        try:
+            vector_results = await self.vector_db_service.search_by_vector(
+                collection_name=collection_name,
+                vector=query_vector,
+                limit=limit,
+                filters=filters,
+            )
+        finally:
+            await self.vector_db_service.close()
+
+        return actual_embedding_model, vector_results

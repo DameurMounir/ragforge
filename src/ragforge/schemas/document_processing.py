@@ -1,6 +1,12 @@
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+    model_validator,
+)
 
 
 class ProcessDocumentRequest(BaseModel):
@@ -29,6 +35,14 @@ class ProcessedAssetResponse(BaseModel):
     status: str
     inserted_chunks: int = Field(ge=0)
     chunks: list[dict[str, Any]] | None = None
+
+    @model_serializer(mode="wrap", when_used="json")
+    def serialize_asset(self, handler: SerializerFunctionWrapHandler):
+        # The governed processing contract omits chunks unless content was requested.
+        data = handler(self)
+        if self.chunks is None:
+            data.pop("chunks", None)
+        return data
 
 
 class FailedAssetResponse(BaseModel):

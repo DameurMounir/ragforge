@@ -51,5 +51,6 @@ class ResponseSignal(str, Enum):
 
     # Branch 18 grounded answer signals.
     RAG_ANSWER_SUCCESS = 'rag_answer_success'
+    RAG_ANSWER_REVIEW_REQUIRED = 'rag_answer_review_required'
     RAG_ANSWER_FAILED = 'rag_answer_failed'
     RAG_ANSWER_NO_CONTEXT = 'rag_answer_no_context'

@@ -212,6 +212,14 @@ class RAGAnswerService(BaseService):
             context=context,
             available_source_numbers=available_source_numbers,
         )
+        verbatim = answer_request.citation_policy == 'verbatim'
+        system_prompt = RAG_ANSWER_SYSTEM_PROMPT
+        if verbatim:
+            system_prompt += (
+                '\nReturn only complete sentences copied from a relevant source, '
+                'one per line, preserving the source language. Append [Source N] '
+                'to each sentence. Omit any claim without an exact supporting sentence.'
+            )
 
         try:
             llm_response = await self.llm_service.generate(
@@ -219,7 +227,7 @@ class RAGAnswerService(BaseService):
                     provider=self.settings.LLM_PROVIDER,
                     model=self.settings.LLM_DEFAULT_MODEL,
                     prompt=prompt,
-                    system_prompt=RAG_ANSWER_SYSTEM_PROMPT,
+                    system_prompt=system_prompt,
                     temperature=self.settings.LLM_TEMPERATURE,
                     max_output_tokens=self.settings.LLM_MAX_OUTPUT_TOKENS,
                 )
@@ -245,18 +253,28 @@ class RAGAnswerService(BaseService):
         answer_text = llm_response.content
         citation_validation = {}
 
-        if self.settings.RAG_ENABLE_CITATION_VALIDATION:
+        if verbatim:
+            citation_validation = self.citation_validator.verify_excerpts(
+                answer=answer_text,
+                passages={item.source_number: item.text for item in built_context['evidence']},
+            )
+            answer_text = citation_validation['answer']
+        elif self.settings.RAG_ENABLE_CITATION_VALIDATION:
             citation_validation = self.citation_validator.validate_and_sanitize(
                 answer=answer_text,
                 valid_source_numbers=available_source_numbers,
             )
             answer_text = citation_validation['answer']
 
-            if citation_validation['invalid_source_numbers']:
+            if citation_validation['invalid_source_numbers'] and not citation_validation['review_required']:
                 warnings.append(
                     'The generated answer referenced invalid source numbers; '
                     'the answer was sanitized.'
                 )
+
+        needs_review = citation_validation.get('review_required', False)
+        if needs_review:
+            warnings.append('Unsupported statements were withheld. Review the source passages.')
 
         sources = [
             source.model_dump()
@@ -269,8 +287,14 @@ class RAGAnswerService(BaseService):
         ] if include_evidence else []
 
         return int(HTTPStatus.OK), {
-            'signal': ResponseSignal.RAG_ANSWER_SUCCESS.value,
-            'message': 'Answer generated from retrieved evidence.',
+            'signal': (
+                ResponseSignal.RAG_ANSWER_REVIEW_REQUIRED.value
+                if needs_review else ResponseSignal.RAG_ANSWER_SUCCESS.value
+            ),
+            'message': (
+                'Source review is required.' if needs_review
+                else 'Answer generated from retrieved evidence.'
+            ),
             'project_id': project_id,
             'question': answer_request.question,
             'answer': answer_text,

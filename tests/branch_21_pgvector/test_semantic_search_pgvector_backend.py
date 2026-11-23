@@ -151,6 +151,26 @@ async def test_asset_filter_is_passed_to_vector_backend():
 
 
 @pytest.mark.anyio
+async def test_strict_space_filters_backend_by_response_model_and_provider():
+    settings = FakeSettings()
+    settings.EMBEDDING_MODEL = 'configured-alias'
+    settings.EMBEDDING_PROVIDER = 'fake'
+    settings.SEARCH_REQUIRE_MATCHING_EMBEDDING_SPACE = True
+    service = SemanticSearchService(settings=settings)
+    await service.search_project_chunks(
+        project_id='project21test',
+        search_request=SemanticSearchRequest(query='semantic search', asset_id='asset-id'),
+        project_store=ProjectStoreFound(),
+    )
+    assert FakeVectorDBService.created_instances[-1].search_calls[0]['filters'] == {
+        'project_id': 'project-db-id',
+        'asset_id': 'asset-id',
+        'embedding_model': 'fake-embedding-model',
+        'embedding_provider': 'fake',
+    }
+
+
+@pytest.mark.anyio
 async def test_include_text_and_metadata_flags_hide_optional_fields():
     FakeVectorDBService.results = [
         SimpleNamespace(

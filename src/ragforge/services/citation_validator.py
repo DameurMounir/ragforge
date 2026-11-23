@@ -13,6 +13,51 @@ class CitationValidator:
 
     SOURCE_PATTERN = re.compile(r'\[(Sources?\s+[^\]]+)\]')
     NUMBER_PATTERN = re.compile(r'\d+')
+    _EXCERPT = re.compile(
+        r'(?P<claim>.+?)\s+\[Sources? (?P<numbers>[0-9]{1,6}(?:,\s*[0-9]{1,6})*)\]\.?'
+    )
+    _SENTENCE_BREAK = re.compile(r'(?<=[.!?؟。！])\s+')
+    ABSTENTION = 'The cited evidence is insufficient. Source review is required.'
+
+    def verify_excerpts(self, answer: str, passages: dict[int, str]) -> dict[str, Any]:
+        """Keep only complete extractive sentences found in every cited passage."""
+        sentences = {}
+        for number, passage in passages.items():
+            normalized = ' '.join(passage.split())
+            sentences[number] = {
+                sentence.removesuffix('.'): sentence
+                for sentence in self._SENTENCE_BREAK.split(normalized)
+                if sentence and not sentence.endswith(('...', '…'))
+            }
+
+        accepted = []
+        rejected = 0
+        invalid_numbers = set()
+        for line in answer.splitlines():
+            if not line.strip():
+                continue
+            match = self._EXCERPT.fullmatch(' '.join(line.split()))
+            if match is None or self.SOURCE_PATTERN.search(match['claim']):
+                rejected += 1
+                continue
+            numbers = [int(value) for value in match['numbers'].split(',')]
+            invalid_numbers.update(set(numbers) - passages.keys())
+            claim = match['claim'].removesuffix('.')
+            if not all(claim in sentences.get(number, {}) for number in numbers):
+                rejected += 1
+                continue
+            label = 'Source' if len(numbers) == 1 else 'Sources'
+            citation = ', '.join(str(number) for number in numbers)
+            accepted.append(f'{sentences[numbers[0]][claim]} [{label} {citation}]')
+
+        return {
+            'policy': 'verbatim',
+            'answer': '\n'.join(accepted) if accepted else self.ABSTENTION,
+            'accepted_claims': len(accepted),
+            'rejected_claims': rejected,
+            'invalid_source_numbers': sorted(invalid_numbers),
+            'review_required': bool(rejected or not accepted),
+        }
 
     def validate_and_sanitize(
         self,
@@ -29,12 +74,20 @@ class CitationValidator:
 
         sanitized_answer = answer
         was_modified = False
+        missing_support = False
 
         if invalid_numbers:
-            sanitized_answer = self._remove_invalid_source_numbers(
-                answer=answer,
-                valid_set=valid_set,
+            # A wholly invalid attribution must not turn into a free-standing claim.
+            missing_support = any(
+                not valid_set.intersection(int(n) for n in self.NUMBER_PATTERN.findall(group))
+                for group in self.SOURCE_PATTERN.findall(answer)
             )
+            if missing_support:
+                sanitized_answer = self.ABSTENTION
+            else:
+                sanitized_answer = self._remove_invalid_source_numbers(
+                    answer=answer, valid_set=valid_set
+                )
             was_modified = sanitized_answer != answer
 
         return {
@@ -42,6 +95,7 @@ class CitationValidator:
             'cited_source_numbers': cited_numbers,
             'invalid_source_numbers': invalid_numbers,
             'was_modified': was_modified,
+            'review_required': missing_support,
             'answer': sanitized_answer,
         }
 

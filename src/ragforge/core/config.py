@@ -91,6 +91,9 @@ class Settings(BaseSettings):
     # Semantic search settings.
     SEARCH_DEFAULT_LIMIT: int = 5
     SEARCH_MAX_LIMIT: int = 20
+    # Historical indexes may lack provider identity. Enable after verifying or
+    # rebuilding every searchable record with the target provider and model.
+    SEARCH_REQUIRE_MATCHING_EMBEDDING_SPACE: bool = False
     SEARCH_MIN_SCORE: float | None = None
     SEARCH_INCLUDE_TEXT_DEFAULT: bool = True
     SEARCH_INCLUDE_METADATA_DEFAULT: bool = True

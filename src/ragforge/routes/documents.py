@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -61,9 +62,11 @@ async def upload_document(
                 project_id=project_id,
             )
         )
+        content_hash = hashlib.sha256()
         async with aiofiles.open(file_path, "wb") as output_file:
             while chunk := await file.read(app_settings.FILE_DEFAULT_CHUNK_SIZE):
                 await output_file.write(chunk)
+                content_hash.update(chunk)
 
         file_size = Path(file_path).stat().st_size
         file_extension = Path(original_filename).suffix.replace(".", "").lower()
@@ -83,6 +86,7 @@ async def upload_document(
             mime_type=file.content_type,
             asset_size=file_size,
             storage_path=str(file_path),
+            asset_metadata={"source_revision": content_hash.hexdigest()},
         )
         asset_record = await asset_store.create_asset(asset=asset)
     except ValueError as error:
