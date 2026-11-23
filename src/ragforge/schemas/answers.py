@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -16,6 +18,10 @@ class RAGAnswerRequest(BaseModel):
     include_sources: bool | None = None
     include_evidence: bool | None = None
     include_debug_prompt: bool | None = None
+    citation_policy: Literal['reference_numbers', 'verbatim'] = Field(
+        default='reference_numbers',
+        description='Verbatim keeps only complete sentences copied from their cited passages.',
+    )
 
     @field_validator('question')
     @classmethod
@@ -102,4 +108,3 @@ class RAGAnswerResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     retrieval_diagnostics: dict = Field(default_factory=dict)
     citation_validation: dict = Field(default_factory=dict)
-    

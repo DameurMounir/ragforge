@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
+from typing import Literal, Self
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SemanticSearchRequest(BaseModel):
@@ -16,6 +18,25 @@ class SemanticSearchRequest(BaseModel):
     min_score: float | None = None
     include_text: bool | None = None
     include_metadata: bool | None = None
+    ranking_method: Literal['dense', 'bm25', 'rrf'] = 'dense'
+    source_revision: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
+    max_corpus_chunks: int | None = Field(default=None, ge=1, le=256, strict=True)
+    max_corpus_characters: int | None = Field(default=None, ge=1, le=1_000_000, strict=True)
+
+    @model_validator(mode='after')
+    def check_ranked_scope(self) -> Self:
+        bounds = (self.source_revision, self.max_corpus_chunks, self.max_corpus_characters)
+        if self.ranking_method == 'dense':
+            if any(value is not None for value in bounds):
+                raise ValueError('Pinned corpus options require bm25 or rrf.')
+            return self
+        if not self.asset_id or any(value is None for value in bounds):
+            raise ValueError('Ranked retrieval requires an asset, revision and corpus budgets.')
+        if self.min_score is not None:
+            raise ValueError('A dense similarity threshold does not apply to lexical or fused ranks.')
+        if len(self.query) > 4096:
+            raise ValueError('Ranked query exceeds 4096 characters.')
+        return self
 
     @field_validator('query')
     @classmethod

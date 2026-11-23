@@ -90,6 +90,21 @@ class ChunkStore(BaseMongoStore):
 
         return inserted_count
 
+    async def indexed_revision_chunks(self, project_id: ObjectId, asset_id: ObjectId, revision: str, limit: int):
+        """Read only acknowledged passages of the requested project/asset revision."""
+        query = {
+            'chunk_project_id': project_id,
+            'chunk_asset_id': asset_id,
+            'chunk_metadata.source_revision': revision,
+            'embedded': True,
+        }
+        cursor = self.collection.find(query).sort('chunk_order', 1).limit(limit).batch_size(1)
+        try:
+            async for row in cursor:
+                yield DataChunk(**row)
+        finally:
+            await cursor.close()
+
     async def get_asset_chunks(
         self,
         asset_id: str | ObjectId,
